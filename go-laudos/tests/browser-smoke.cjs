@@ -29,15 +29,20 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   // Actual HTML and JS, with Chrome APIs mocked: this is not an extension installation test.
   const popup=await context.newPage();const errors=[];popup.on('pageerror',e=>errors.push(e.message));
   await popup.addInitScript(()=>{
-   window.chrome={runtime:{getManifest:()=>({version:'0.33.0'}),sendMessage:async msg=>{
+   window.chrome={runtime:{getManifest:()=>({version:'0.34.0'}),sendMessage:async msg=>{
     if(msg.type==='session-settings'){window.savedAccount=msg.account;return {sessionAccount:msg.account,sessionEnabled:msg.enabled}}
     if(msg.type==='session-info')return {sessionAccount:window.savedAccount||'',sessionEnabled:false};
+    if(msg.type==='refresh-start'){window.refreshOptions=msg.options;return {enabled:true}}
+    if(msg.type==='refresh-info')return {message:window.refreshOptions?'Programado.':'Desativado.'};
     if(msg.type==='get')return null;return {};
    }},tabs:{query:async()=>[{id:1}]}};
   });
   await popup.route('https://fixture.test/**',route=>{const name=new URL(route.request().url()).pathname.slice(1)||'popup.html';if(!['popup.html','popup.js'].includes(name))return route.abort();return route.fulfill({contentType:name.endsWith('.js')?'text/javascript':'text/html',body:fs.readFileSync(path.join(extension,name),'utf8')})});
   await popup.goto('https://fixture.test/popup.html');await popup.locator('#sessionAccount').fill('test@example.com');await popup.locator('#sessionSave').click();await popup.waitForFunction(()=>document.getElementById('sessionStatus').textContent.includes('Configuração salva'));
-  assert.equal(await popup.locator('#extensionVersion').textContent(),'v0.33.0');assert.deepEqual(errors,[]);
+  assert.equal(await popup.locator('#extensionVersion').textContent(),'v0.34.0');assert.deepEqual(errors,[]);
+  await popup.locator('#refreshMin').fill('45');await popup.locator('#refreshMax').fill('90');await popup.locator('#refreshStart').click();
+  await popup.waitForFunction(()=>document.getElementById('refreshStatus').textContent.includes('Programado'));
+  assert.equal(await popup.evaluate(()=>window.refreshOptions.minSeconds),45);assert.equal(await popup.evaluate(()=>window.refreshOptions.maxSeconds),90);
   console.log('PASS: botão SAP por SID recebeu clique; filtros SAP foram preenchidos e solicitaram Executar; popup salvou configuração sem erros com APIs Chrome simuladas.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

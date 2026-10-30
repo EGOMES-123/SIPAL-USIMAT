@@ -1,3 +1,19 @@
+GO-LAUDOS v0.34.0 — sessão, coleta, atualização e monitoramento
+
+1. Pare o robô e desative as extensões separadas SAP Sessão Automática e Auto Refresh Plus na aba SAP.
+2. Substitua os arquivos na MESMA pasta GO-LAUDOS. Recarregue a extensão em chrome://extensions e depois as abas. Não remova a extensão, para preservar o vínculo.
+3. A sessão automática continua configurada por e-mail no popup.
+4. Para atualização: abra a página inicial SAP (#Shell-home), abra o popup e configure os intervalos e o limite de recargas. Clique em Iniciar nesta aba.
+5. Mínimo = máximo: intervalo fixo. Máximo maior: intervalo aleatório. O mínimo permitido é 30 segundos. Padrão: 4 minutos, 10 recargas.
+6. Monitorar mudanças compara o texto visível da página principal. Pausar ao detectar mudança interrompe novas recargas para você conferir. Textos dinâmicos podem gerar detecções.
+7. Use Pausar atualização para encerrar o ciclo. Esse botão não para a coleta nem desativa a sessão automática; esses recursos têm controles próprios.
+
+A atualização não atua no login, no monitor de pesagens nem enquanto há reserva de aba ou execução ativa. Pausa em erros, saída da página inicial ou após 3 falhas. Reiniciar o Chrome encerra a execução programada. Suspender o computador pode atrasar alarmes.
+A função não corrige HTTP 0 nem garante renovação da sessão no servidor. O texto monitorado não é enviado à nuvem.
+27 testes automatizados aprovados; controles e fluxo de filtros/Executar verificados no DOM do Chromium com páginas e APIs simuladas. SAP autenticado e a instalação real da extensão permanecem sem validação neste ambiente.
+
+Detalhes de sessão e coleta da versão anterior:
+
 GO-LAUDOS v0.33.0 — coletor e sessão automática integrados
 
 COMO ATUALIZAR

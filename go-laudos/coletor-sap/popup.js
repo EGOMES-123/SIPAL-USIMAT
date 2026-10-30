@@ -31,3 +31,17 @@ async function sessionRefresh(){
 $('sessionSave').onclick=async()=>{try{const r=await chrome.runtime.sendMessage({type:'session-settings',account:$('sessionAccount').value,enabled:$('sessionEnabled').checked});if(r.error)throw Error(r.error);await sessionRefresh();$('sessionStatus').textContent='Configuração salva. '+($('sessionEnabled').checked?'Verificação a cada 4 minutos ativada.':'Verificação periódica desativada.');}catch(e){$('sessionStatus').textContent=e.message}};
 $('sessionCheck').onclick=async()=>{try{const r=await chrome.runtime.sendMessage({type:'session-check'});if(r?.error)throw Error(r.error);await sessionRefresh()}catch(e){$('sessionStatus').textContent=e.message}};
 sessionRefresh().catch(()=>{});
+
+let refreshLoaded=false;
+async function refreshPanel(){
+ const r=await chrome.runtime.sendMessage({type:'refresh-info'});
+ if(!refreshLoaded&&r.options){refreshLoaded=true;$('refreshMin').value=r.options.minSeconds;$('refreshMax').value=r.options.maxSeconds;$('refreshLimit').value=r.options.limit;$('refreshCache').checked=!!r.options.bypassCache;$('refreshMonitor').checked=!!r.options.monitor;$('refreshStopChange').checked=!!r.options.stopOnChange;}
+ $('refreshStatus').textContent=(r.message||'Atualização desativada.')+(r.enabled&&r.nextAt?'\nPróxima verificação: '+new Date(r.nextAt).toLocaleTimeString('pt-BR'):'')+(r.tabId?'\nAba '+r.tabId+' · '+(r.changes||0)+' mudanças detectadas.':'');
+}
+$('refreshStart').onclick=async()=>{try{
+ const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
+ const r=await chrome.runtime.sendMessage({type:'refresh-start',tabId:tab.id,options:{minSeconds:Number($('refreshMin').value),maxSeconds:Number($('refreshMax').value),limit:Number($('refreshLimit').value),bypassCache:$('refreshCache').checked,monitor:$('refreshMonitor').checked,stopOnChange:$('refreshStopChange').checked}});
+ if(r.error)throw Error(r.error);await refreshPanel();
+}catch(e){$('refreshStatus').textContent=e.message}};
+$('refreshStop').onclick=async()=>{try{const r=await chrome.runtime.sendMessage({type:'refresh-stop'});if(r.error)throw Error(r.error);await refreshPanel()}catch(e){$('refreshStatus').textContent=e.message}};
+refreshPanel().catch(()=>{});setInterval(()=>refreshPanel().catch(()=>{}),1000);

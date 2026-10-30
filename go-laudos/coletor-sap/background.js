@@ -81,5 +81,5 @@ async function relay(current,tabId,key,force=false){
 }
 importScripts('session-watchdog.js','schedule.js');
 
-importScripts('remote.js','session-auto.js');
+importScripts('remote.js','session-auto.js','refresh-auto.js');
 function normalizeCloudRows(rows){return rows.map(row=>{const r={...row};for(const k of ['Peso Origem','Peso Entrada','Peso Saída','Peso após Desc','Valor Nota Fiscal'])if(typeof r[k]==='string'&&r[k].includes(',')){const n=Number(r[k].replace(/\./g,'').replace(',','.'));if(!Number.isFinite(n))throw Error('Peso ou valor inválido');r[k]=String(n);}return r;});}

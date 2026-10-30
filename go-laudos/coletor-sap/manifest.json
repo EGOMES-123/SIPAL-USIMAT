@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GO - LAUDOS · Coletor SAP",
-  "version": "0.33.0",
+  "version": "0.34.0",
   "description": "Sincronização SAP de 01.01.2026 até ontem, com confirmação de processamento e envio ao GO - LAUDOS.",
   "permissions": [
     "activeTab",
