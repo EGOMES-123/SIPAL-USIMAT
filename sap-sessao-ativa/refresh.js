@@ -14,9 +14,9 @@ async function selectRefreshTab(tabId,state){
  if(refreshHome(tab?.url))return tab;
  const {helperTabId}=await chrome.storage.session.get('helperTabId');
  for(const id of [...new Set([state?.tabId,helperTabId])].filter(Number.isInteger)){
-  try{const existing=await chrome.tabs.get(id);if(refreshHome(existing.url)){await chrome.tabs.update(id,{active:true});return existing}}catch{}
+  try{const existing=await chrome.tabs.get(id);if(refreshHome(existing.url))return existing}catch{}
  }
- return chrome.tabs.create({url:'https://s4.sipal.com.br/sap/bc/ui2/flp#Shell-home',active:true});
+ return chrome.tabs.create({url:'https://s4.sipal.com.br/sap/bc/ui2/flp#Shell-home',active:false});
 }
 
 function refreshOptions(raw){

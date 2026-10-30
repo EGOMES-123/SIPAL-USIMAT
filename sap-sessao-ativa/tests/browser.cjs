@@ -3,7 +3,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  const root=path.resolve(__dirname,'..');const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  try{
   const context=await browser.newContext();const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.7.0'}),sendMessage:async msg=>{
+  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.8.0'}),sendMessage:async msg=>{
    const s=window.testState;
    if(msg.type==='session-info')return s;
    if(msg.type==='settings-save'){s.settings={account:msg.account,enabled:msg.enabled};return {ok:true}}
@@ -21,7 +21,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   await page.waitForFunction(()=>Number(document.getElementById('countdown').textContent.split(':')[1])<=14,{},{timeout:5000});
   await page.locator('#pauseAll').click();await page.locator('#tab-session').click();await page.waitForFunction(()=>document.getElementById('sessionStatus').textContent.includes('Tudo pausado'));assert.equal(await page.locator('#enabled').isChecked(),false);assert.equal(await page.evaluate(()=>testState.refresh.enabled),false);assert.equal(await page.locator('#countdown').textContent(),'Pausado');assert.deepEqual(errors,[]);
   assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor),'rgba(0, 0, 0, 0)');
-  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).backgroundColor),'rgb(13, 28, 24)');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).backgroundColor),'rgb(13, 28, 24)');assert.equal(await page.locator('.watermark').textContent(),'USIMAT - ADM');
   await page.locator('#tab-timer').click();await page.locator('#timerSeconds').fill('3');await page.locator('#startRefresh').click();
   assert.equal(await page.evaluate(()=>testState.refresh.options.firstDelaySeconds),3);assert.equal(await page.evaluate(()=>testState.refresh.options.limit),1);
   await page.locator('#startRefresh').click();assert.equal(await page.evaluate(()=>testState.refresh.enabled),false);

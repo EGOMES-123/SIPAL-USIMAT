@@ -25,8 +25,8 @@ async function loginBackgroundClick(msg,sender,run){
  try{
   await check();if(!chrome.debugger?.attach)throw Error('Permissão de depuração indisponível.');
   await chrome.debugger.attach(target,'1.3');attached=true;
-  // The user requested this interaction; foreground only the owned login tab.
-  const tab=await chrome.tabs.get(run.tabId);await chrome.tabs.update(run.tabId,{active:true});await chrome.windows.update(tab.windowId,{focused:true});
+  // Keep the user's current tab/window in front. Background input may still
+  // require manual confirmation of autofill; never steal focus to work around it.
   await check();
   await chrome.debugger.sendCommand(target,'Input.dispatchMouseEvent',{type:'mouseMoved',x:msg.point.x,y:msg.point.y,button:'none',buttons:0});
   down=true;await chrome.debugger.sendCommand(target,'Input.dispatchMouseEvent',{type:'mousePressed',x:msg.point.x,y:msg.point.y,button:'left',buttons:1,clickCount:1});

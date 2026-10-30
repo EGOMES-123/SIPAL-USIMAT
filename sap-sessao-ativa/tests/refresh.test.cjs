@@ -23,3 +23,14 @@ test('toolbar badge switches from countdown to paused',async()=>{const app=setup
 test('first countdown delay applies once; repeats use the regular interval',async()=>{const app=setup();const before=Date.now();await app.ctx.refreshSchedule(app.state.refreshState,60);assert.ok(app.state.refreshState.nextAt>=before+60000);app.state.refreshState.nextAt=0;await app.tick();assert.ok(app.state.refreshState.nextAt<=Date.now()+30000)});
 test('a matching phrase pauses without sending another reload',async()=>{const probe={ready:true,text:'Inicial'};const app=setup({probe,options:{monitorText:'serviço disponível'}});await app.tick();probe.text='SERVIÇO DISPONÍVEL';app.state.refreshState.nextAt=0;await app.tick();assert.equal(app.calls.length,1);assert.equal(app.state.refreshState.enabled,false);assert.equal(app.state.refreshState.changes,1)});
 test('countdown bounds and monitor phrase length are checked',()=>{const app=setup();for(const extra of [{firstDelaySeconds:-1},{firstDelaySeconds:604801},{monitorText:'x'.repeat(201)}])assert.throws(()=>app.ctx.refreshOptions({minSeconds:15,maxSeconds:15,limit:0,...extra}));assert.equal(app.ctx.refreshOptions({minSeconds:5,maxSeconds:5,limit:0,firstDelaySeconds:3}).firstDelaySeconds,3)});
+test('100 refresh configurations respect busy states, limits and stop',async()=>{
+ for(let i=0;i<100;i++){
+  const limit=i%8,probe={ready:true,text:'inicial'},app=setup({probe,options:{minSeconds:1+i%30,maxSeconds:31+i%30,limit,monitor:false}});
+  for(let step=0;step<20;step++){
+   probe.blocked=step%5===0;const before=app.calls.length;app.state.refreshState.nextAt=0;
+   await app.tick();if(probe.blocked)assert.equal(app.calls.length,before);
+   if(limit>0)assert.ok(app.calls.length<=limit);
+  }
+  await app.ctx.refreshPause(app.state.refreshState,'Pausado');const before=app.calls.length;await app.tick();assert.equal(app.calls.length,before);
+ }
+});
