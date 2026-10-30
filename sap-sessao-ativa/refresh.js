@@ -21,11 +21,15 @@ function refreshDelay(options){return (options.minSeconds+Math.floor(Math.random
 function refreshHome(url){try{const parsed=new URL(url);return parsed.origin==='https://s4.sipal.com.br'&&/^\/sap\/bc\/ui2\/flp\/?$/.test(parsed.pathname)&&parsed.hash==='#Shell-home'}catch{return false}}
 function refreshProbe(){
  const visible=e=>{const rect=e.getBoundingClientRect();return rect.width>0&&rect.height>0&&getComputedStyle(e).visibility!=='hidden'};
- const blocked=[...document.querySelectorAll('[aria-busy="true"],[role="progressbar"],[role="dialog"],[role="alertdialog"],input[type="password"]')].some(visible);
- const editing=[...document.querySelectorAll('input,textarea,[contenteditable="true"]')].some(e=>visible(e)&&!e.disabled&&(e===document.activeElement||e.value||e.isContentEditable));
+ const busy=[...document.querySelectorAll('[aria-busy="true"],[role="progressbar"]')].filter(visible).length;
+ const dialogs=[...document.querySelectorAll('[role="dialog"],[role="alertdialog"]')].filter(visible).length;
+ const passwords=[...document.querySelectorAll('input[type="password"]')].filter(visible).length;
+ const blocked=busy>0||dialogs>0||passwords>0;
+ const edited=[...(globalThis.sapSessionDirtyInputs||[])].filter(e=>e.isConnected&&visible(e)&&!e.disabled&&String(e.value??e.textContent??'').trim());
+ const editing=edited.length>0;
  const failure=/erro de back.end|encerramento da aplica[cç][aã]o|HTTP\s*0\b|sess[aã]o (?:expirada|encerrada)/i.test(document.body?.innerText||'');
  // Text stays local and is immediately hashed. It is never logged or uploaded.
- return {blocked:blocked||editing,failed:failure,ready:document.readyState==='complete',text:(document.body?.innerText||'').slice(0,250000)};
+ return {summary:{busy,dialogs,passwords,editedFields:edited.length},blocked:blocked||editing,failed:failure,ready:document.readyState==='complete',text:(document.body?.innerText||'').slice(0,250000)};
 }
 let refreshFlight=null;
 async function refreshSave(state){await chrome.storage.session.set({refreshState:state});await updateRefreshBadge();return state;}
@@ -45,12 +49,13 @@ async function refreshTickLocked(){
    state.message='Aguardando a assistência de login terminar.';return refreshSchedule(state);
   }
   const tab=await chrome.tabs.get(state.tabId);
+  if(tab.url?.startsWith('https://login.microsoftonline.com/'))return recoverSelectedLoginLocked(state,tab);
   if(!refreshHome(tab.url))return refreshPause(state,'Pausado: a aba saiu da página inicial SAP. Consultas e login não são recarregados.');
   if(tab.status==='loading'){state.message='Aguardando carregamento da página.';return refreshSchedule(state)}
   const results=await chrome.scripting.executeScript({target:{tabId:state.tabId,frameIds:[0]},func:refreshProbe});
-  const probe=results[0]?.result;if(!probe)throw Error('Não foi possível verificar a página.');
+  const probe=results[0]?.result;if(!probe)throw Error('Não foi possível verificar a página.');state.lastProbe=probe.summary||null;
   if(probe.failed)return refreshPause(state,'Pausado: a página SAP informou erro. Nenhuma nova recarga será enviada.');
-  if(probe.blocked||!probe.ready){state.message='Aguardando: SAP ocupado, diálogo aberto ou campo em uso.';return refreshSchedule(state)}
+  if(probe.blocked||!probe.ready){state.message=probe.summary?.editedFields?'Aguardando: texto digitado por você ainda está no campo. Limpe o campo para retomar.':probe.summary?.dialogs?'Aguardando: diálogo SAP aberto.':probe.summary?.busy?'Aguardando: SAP sinaliza processamento.':'Aguardando carregamento ou confirmação da página.';return refreshSchedule(state)}
   if(state.options.monitor&&state.options.monitorText){
    const found=(probe.text||'').toLocaleLowerCase('pt-BR').includes(state.options.monitorText.toLocaleLowerCase('pt-BR'));
    if(found&&!state.lastMatched){state.changes++;state.lastChangeAt=Date.now();if(state.options.stopOnChange)return refreshPause(state,'Texto procurado encontrado. Atualização pausada para você conferir.');}
@@ -91,10 +96,26 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
    if(msg.type==='refresh-stop')return refreshPause(state||{},'Atualização pausada por você.');
    const options=refreshOptions(msg.options||{});const tab=await chrome.tabs.get(msg.tabId);
    if(!refreshHome(tab.url))throw Error('Abra a página inicial SAP (#Shell-home). A atualização não atua em consultas nem no login.');
-   const next={enabled:true,tabId:tab.id,options,count:0,changes:0,failures:0,hash:null,startedAt:Date.now(),message:'Programado. Primeira atualização após o intervalo escolhido.'};
+   try{await chrome.scripting.executeScript({target:{tabId:tab.id,frameIds:[0]},files:['interaction-guard.js']});}catch{}
+   const next={enabled:true,tabId:tab.id,targetUrl:tab.url,options,count:0,changes:0,failures:0,hash:null,startedAt:Date.now(),message:'Programado. Primeira atualização após o intervalo escolhido.'};
    return refreshSchedule(next,options.firstDelaySeconds);
   });
  })().then(reply).catch(error=>reply({error:error.message}));return true;
 });
 
-chrome.tabs.onUpdated?.addListener((tabId,change)=>{if(change.url&&!refreshHome(change.url))serial(async()=>{const {refreshState:state}=await chrome.storage.session.get('refreshState');if(state?.enabled&&state.tabId===tabId)await refreshPause(state,'Pausado: a aba saiu da página inicial SAP.');}).catch(()=>{});});
+chrome.tabs.onUpdated?.addListener((tabId,change,tab)=>{
+ if(!change.url&&change.status!=='complete')return;
+ serial(async()=>{
+  const {refreshState:state,sessionRun:run}=await chrome.storage.session.get(['refreshState','sessionRun']);if(!state?.enabled||state.tabId!==tabId)return;
+  const current=tab?.url?tab:await chrome.tabs.get(tabId);
+  if(current.url?.startsWith('https://login.microsoftonline.com/')){await recoverSelectedLoginLocked(state,current);return;}
+  if(run?.reconnect&&run.tabId===tabId&&current.url?.startsWith('https://s4.sipal.com.br/')){
+   if(change.status!=='complete')return; // Let authentication callbacks finish before restoring the SAP page.
+   run.active=false;run.phase='done';run.message='Retorno da Microsoft ao SAP detectado. Retomando a aba selecionada.';await saveRun(run);
+   state.message=run.message;state.recovering=false;
+   if(!refreshHome(current.url)){await refreshSave(state);await chrome.tabs.update(tabId,{url:state.targetUrl||HOME});}
+   await refreshSchedule(state);return;
+  }
+  if(!refreshHome(current.url))await refreshPause(state,'Pausado: a aba saiu da página inicial SAP.');
+ }).catch(()=>{});
+});

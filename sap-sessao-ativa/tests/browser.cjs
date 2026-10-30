@@ -3,7 +3,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  const root=path.resolve(__dirname,'..');const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  try{
   const context=await browser.newContext();const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.4.0'}),sendMessage:async msg=>{
+  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.5.0'}),sendMessage:async msg=>{
    const s=window.testState;
    if(msg.type==='session-info')return s;
    if(msg.type==='settings-save'){s.settings={account:msg.account,enabled:msg.enabled};return {ok:true}}
@@ -29,6 +29,12 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   assert.equal(await page.evaluate(()=>testState.refresh.options.monitorText),'Serviço disponível');await page.locator('#startRefresh').click();
 
   await page.screenshot({path:path.join(root,'preview.png'),fullPage:true});
+  const probePage=await context.newPage();await probePage.setContent('<input id="check" type="checkbox" checked><input id="text" type="text" value="Valor padrão SAP">');
+  const source=fs.readFileSync(path.join(root,'refresh.js'),'utf8');await probePage.addScriptTag({content:source.slice(source.indexOf('function refreshProbe(){'),source.indexOf('\nlet refreshFlight'))});
+  await probePage.addScriptTag({path:path.join(root,'interaction-guard.js')});
+  assert.equal((await probePage.evaluate(()=>refreshProbe())).blocked,false);
+  await probePage.locator('#text').fill('Digitado pelo usuário');assert.equal((await probePage.evaluate(()=>refreshProbe())).summary.editedFields,1);
+  await probePage.locator('#text').fill('');assert.equal((await probePage.evaluate(()=>refreshProbe())).blocked,false);
   // Real Microsoft-like DOM; all runtime APIs simulated, no authentication request.
   const login=await context.newPage();await login.route('https://login.microsoftonline.com/**',route=>route.fulfill({contentType:'text/html',body:'<div id="lightbox" style="position:absolute;left:100px;top:200px;width:400px;height:300px"><div id="displayName">test@example.com</div><input id="i0118" type="password" value="fixture-only"><input id="idSIButton9" type="submit" value="Entrar"></div><script>window.clicks=0;document.getElementById("idSIButton9").onclick=e=>{e.preventDefault();window.clicks++}</script>'}));
   await login.goto('https://login.microsoftonline.com/fixture');await login.evaluate(()=>{window.backgroundClicks=0;window.chrome.runtime={sendMessage:async msg=>{if(msg.type==='login-background-click'){window.backgroundClicks++;return {ok:true}}return msg.type==='session-config'?{active:true,account:'test@example.com',sessionId:'fixture'}:{ok:true}}}});await login.addScriptTag({path:path.join(root,'login.js')});await login.waitForFunction(()=>window.clicks===1,{},{timeout:8000});await login.waitForTimeout(1500);assert.equal(await login.evaluate(()=>window.clicks),1);assert.equal(await login.evaluate(()=>window.backgroundClicks),1);

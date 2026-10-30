@@ -21,8 +21,9 @@ async function render(){
  if(loading)return;loading=true;
  try{
   const info=await send({type:'session-info'}),r=info.refresh;
-  if(!loaded){loaded=true;$('account').value=info.settings.account;$('enabled').checked=info.settings.enabled;
+  if(!loaded){loaded=true;$('account').value=info.settings.account;$('enabled').checked=info.settings.enabled;$('reconnect').checked=info.settings.reconnect!==false;
    if(r?.options){const o=r.options;$('min').value=o.minSeconds;$('max').value=o.maxSeconds;$('limit').value=o.limit||10;$('useLimit').checked=o.limit>0;$('limitRow').hidden=!$('useLimit').checked;$('cache').checked=o.bypassCache;$('monitor').checked=o.monitor;$('monitorText').value=o.monitorText||'';$('stopChange').checked=o.stopOnChange;setIntervalMode(o.minSeconds===o.maxSeconds?'fixed':'random');}}
+  $('loginSummary').textContent=info.settings.account?'Login configurado · recuperação '+(info.settings.reconnect!==false?'ativada':'desativada'):'Login não configurado. Clique em Configurar login e salve seu e-mail.';
   running=!!r?.enabled;$('startRefresh').textContent=running?'■ Parar':'▶ Iniciar';$('startRefresh').classList.toggle('danger',running);$('startRefresh').setAttribute('aria-pressed',String(running));
   $('sessionStatus').textContent=(info.run?.message||'Salve o e-mail e clique em Verificar sessão.')+'\nVerificação periódica: '+(info.settings.enabled?'ativada':'desativada');
   const view=refreshTimerView(r,info.run);$('countdown').textContent=view.text;$('countdownLabel').textContent=view.title;
@@ -31,10 +32,12 @@ async function render(){
  }catch(e){$('feedback').textContent=e.message}finally{loading=false}
 }
 function action(id,fn){$(id).onclick=async()=>{const b=$(id);b.disabled=true;$('feedback').textContent='';try{await fn();await render()}catch(e){$('feedback').textContent=e.message}finally{b.disabled=false}}}
-const save=()=>send({type:'settings-save',account:$('account').value,enabled:$('enabled').checked});
+const save=()=>send({type:'settings-save',account:$('account').value,enabled:$('enabled').checked,reconnect:$('reconnect').checked});
 action('save',async()=>{await save();$('feedback').textContent='Configuração salva.'});
 action('verify',async()=>{await save();await send({type:'session-start'})});
 action('open',()=>send({type:'session-open'}));
+action('quickLogin',()=>send({type:'session-open'}));
+$('configureLogin').onclick=()=>{selectTab('session');$('account').focus()};
 action('pauseAll',async()=>{await send({type:'pause-all'});$('enabled').checked=false;$('feedback').textContent='Todas as automações pausadas.'});
 action('startRefresh',async()=>{
  if(running){await send({type:'refresh-stop'});return;}

@@ -4,7 +4,7 @@ let taskQueue=Promise.resolve();
 function serial(fn){const result=taskQueue.catch(()=>{}).then(fn);taskQueue=result.catch(()=>{});return result;}
 const allowedUrl=url=>/^https:\/\/(s4\.sipal\.com\.br|login\.microsoftonline\.com)\//.test(url||'');
 const accountValid=account=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account);
-async function settings(){return {account:'',enabled:false,...await chrome.storage.local.get(['account','enabled'])}}
+async function settings(){return {account:'',enabled:false,reconnect:true,...await chrome.storage.local.get(['account','enabled','reconnect'])}}
 async function saveRun(run){
  const {events=[]}=await chrome.storage.session.get('events');
  if(events[0]?.message!==run.message)events.unshift({time:Date.now(),phase:run.phase,message:run.message});
@@ -68,16 +68,41 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
  if(!['settings-save','session-info','session-start','session-open','pause-all','diagnostics'].includes(msg.type))return;
  if(sender.tab||sender.id!==chrome.runtime.id)return;
  (async()=>{
-  if(msg.type==='settings-save')return serial(async()=>{const account=String(msg.account||'').trim().toLowerCase();if(!accountValid(account))throw Error('Informe um e-mail válido.');await chrome.storage.local.set({account,enabled:msg.enabled===true});return {ok:true};});
+  if(msg.type==='settings-save')return serial(async()=>{const account=String(msg.account||'').trim().toLowerCase();if(!accountValid(account))throw Error('Informe um e-mail válido.');await chrome.storage.local.set({account,enabled:msg.enabled===true,reconnect:msg.reconnect!==false});return {ok:true};});
   if(msg.type==='session-start')return sessionStart(true);
   if(msg.type==='pause-all')return pauseEverything();
   if(msg.type==='session-open'){
-   const {helperTabId}=await chrome.storage.session.get('helperTabId');if(!Number.isInteger(helperTabId))throw Error('Clique em Verificar sessão para criar a aba auxiliar.');
+   let {helperTabId,sessionRun}=await chrome.storage.session.get(['helperTabId','sessionRun']);if(sessionRun?.reconnect){
+    try{const current=await chrome.tabs.get(sessionRun.tabId);if(allowedUrl(current.url)){
+     helperTabId=sessionRun.tabId;
+     if(!sessionRun.active&&current.url.startsWith('https://login.microsoftonline.com/'))await serial(async()=>{
+      sessionRun.active=true;sessionRun.startedAt=Date.now();sessionRun.sessionId=crypto.randomUUID();sessionRun.phase='login';sessionRun.message='Retomando o login solicitado por você.';await saveRun(sessionRun);
+      const {refreshState:state}=await chrome.storage.session.get('refreshState');if(state?.tabId===sessionRun.tabId){state.enabled=true;state.recovering=true;await refreshSchedule(state);}
+      await chrome.scripting.executeScript({target:{tabId:sessionRun.tabId},files:['login.js']});
+     });
+    }}catch{}
+   }
+   if(!Number.isInteger(helperTabId)){await sessionStart(true);helperTabId=(await chrome.storage.session.get('helperTabId')).helperTabId;}
+   if(!Number.isInteger(helperTabId))throw Error('Salve o e-mail na aba Sessão para abrir o login.');
    const tab=await chrome.tabs.get(helperTabId);if(!allowedUrl(tab.url))throw Error('A aba auxiliar foi alterada; ela foi preservada.');await chrome.tabs.update(helperTabId,{active:true});await chrome.windows.update(tab.windowId,{focused:true});return {ok:true};
   }
   const run=await serial(expireRun);const cfg=await settings();const {refreshState}=await chrome.storage.session.get('refreshState');
-  if(msg.type==='diagnostics')return {version:chrome.runtime.getManifest().version,exportedAt:new Date().toISOString(),automatic:cfg.enabled,session:run?{phase:run.phase,active:run.active,message:run.message,startedAt:run.startedAt}:null,events:(await chrome.storage.session.get('events')).events||[],refresh:refreshState?{enabled:refreshState.enabled,count:refreshState.count,changes:refreshState.changes,nextAt:refreshState.nextAt,message:refreshState.message}:null};
+  if(msg.type==='diagnostics')return {version:chrome.runtime.getManifest().version,exportedAt:new Date().toISOString(),automatic:cfg.enabled,accountConfigured:accountValid(cfg.account),reconnectEnabled:cfg.reconnect,session:run?{phase:run.phase,active:run.active,message:run.message,startedAt:run.startedAt}:null,events:(await chrome.storage.session.get('events')).events||[],refresh:refreshState?{enabled:refreshState.enabled,count:refreshState.count,changes:refreshState.changes,nextAt:refreshState.nextAt,message:refreshState.message,tabId:refreshState.tabId,lastProbe:refreshState.lastProbe||null}:null};
   return {settings:cfg,run,refresh:refreshState};
  })().then(reply).catch(error=>reply({error:error.message}));return true;
 });
+async function recoverSelectedLoginLocked(state,tab){
+ const cfg=await settings();
+ if(!cfg.reconnect)return refreshPause(state,'Aba redirecionada ao login. Ative Recuperar login na aba Sessão.');
+ if(!accountValid(cfg.account))return refreshPause(state,'Login necessário. Clique em Configurar login e salve seu e-mail Microsoft.');
+ const prior=await expireRun();
+ if(prior?.reconnect&&prior.tabId===tab.id){
+  if(!prior.active){state.recovering=false;return refreshPause(state,'Login exige conferência. Clique em Abrir login para continuar e depois em Iniciar.');}
+  state.message='Aguardando login Microsoft na própria aba selecionada.';return refreshSchedule(state);
+ }
+ const run={active:true,reconnect:true,mode:'login',sessionMaintenance:false,sessionId:crypto.randomUUID(),tabId:tab.id,startedAt:Date.now(),phase:'login',message:'Sessão desconectada. Recuperando o login na aba selecionada.'};
+ await saveRun(run);state.recovering=true;state.message=run.message;await refreshSchedule(state);
+ try{await chrome.scripting.executeScript({target:{tabId:tab.id},files:['login.js']});}catch{state.message='Abra o login para concluir a autenticação Microsoft.';await refreshSave(state);}
+ return state;
+}
 importScripts('refresh.js','background-click.js');
