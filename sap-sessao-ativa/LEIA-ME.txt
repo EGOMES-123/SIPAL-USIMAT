@@ -1,4 +1,10 @@
-SAP SESSÃO ATIVA — versão independente 1.0.0
+ATUALIZAÇÃO v1.2.0 — 15 SEGUNDOS, SEM LIMITE E CLIQUE NO FUNDO
+Pause tudo antes de substituir os arquivos. Recarregue a extensão e depois a aba Microsoft/SAP. Se o Chrome solicitar a nova permissão debugger, aprove para habilitar o clique nativo no fundo do cartão.
+No popup, configure Mínimo=15, Máximo=15 e Limite=0; deixe Pausar ao detectar mudança desmarcado se quiser atualização contínua. Clique em Iniciar nesta aba, na página inicial SAP.
+O temporizador da página agenda os 15 segundos; alarmes do Chrome são uma recuperação de apoio. Abas inativas, economia de energia e suspensão podem atrasar recargas. Não é um temporizador de tempo real.
+Sem limite de quantidade não significa recarregar o login: consultas, campos em uso, erros e a etapa Microsoft continuam protegidos. Pausar tudo continua disponível.
+
+SAP SESSÃO ATIVA — versão independente 1.2.0
 
 INSTALAÇÃO
 1. Desative a extensão antiga SAP Sessão Automática 0.10.9.
@@ -10,10 +16,10 @@ INSTALAÇÃO
 
 ATUALIZAÇÃO DE PÁGINA
 Abra a página inicial SAP (#Shell-home) e, com essa aba selecionada, abra o popup.
-Configure o intervalo mínimo e máximo: iguais = fixo; diferentes = aleatório. Mínimo de 30 segundos. Padrão de 240 segundos e 10 recargas.
+Configure o intervalo mínimo e máximo: iguais = fixo; diferentes = aleatório. Mínimo de 15 segundos. Padrão de 15 segundos e sem limite (valor 0).
 Ignorar cache vale apenas para as recargas programadas.
 Monitorar mudanças compara o texto visível da página principal entre verificações. Relógios e textos dinâmicos também podem mudar. Pausar ao detectar mudança interrompe novas recargas para você conferir.
-O limite também encerra o monitoramento; o resultado da última recarga não é comparado depois do encerramento.
+Se escolher um limite maior que zero, ele também encerra o monitoramento. Com 0, não há limite de recargas.
 
 CONTROLES
 Pausar atualização: encerra atualização e monitoramento, sem desativar a assistência de sessão.
@@ -23,7 +29,7 @@ Após reiniciar o Chrome, as automações ficam desligadas. O e-mail permanece s
 
 PROTEÇÕES E LIMITES
 Nenhuma consulta SAP é executada. Não há captura de pesagens, Supabase, Netlify ou vínculo com GO-LAUDOS.
-Não fecha nem alterna janelas automaticamente; Abrir aba auxiliar traz a aba à frente quando solicitado por você.
+Não fecha janelas automaticamente. Na etapa de senha, traz a aba Microsoft à frente para clicar no fundo vazio à direita do cartão, como solicitado. Abrir aba auxiliar também traz a aba à frente.
 Não navega uma aba auxiliar que tenha sido usada para outro site. Feche essa aba e inicie uma nova verificação.
 A assistência para após 3 minutos sem conclusão. Não repete indefinidamente. Use Verificar sessão após conferir a aba Microsoft.
 A senha não é armazenada ou enviada pela extensão; o Chrome precisa fornecer o preenchimento salvo. MFA e algumas confirmações exigem participação do usuário.
@@ -32,7 +38,15 @@ A extensão independente não consegue coordenar reservas de abas de OUTRAS exte
 Abrir SAP, clicar na lupa ou recarregar não comprova renovação da sessão no servidor. Esta extensão não corrige HTTP 0, certificados Fortinet nem falhas do back-end SAP.
 
 VALIDAÇÃO
-19 testes automatizados aprovados. No Chromium, testes com páginas e APIs simuladas validaram o popup, Pausar tudo e um único envio de Entrar no DOM de login.
+27 testes automatizados aprovados. No Chromium, testes com páginas e APIs simuladas validaram o popup, Pausar tudo e um único envio de Entrar no DOM de login.
 Não houve acesso a credenciais nem autenticação real SAP/Microsoft. O carregamento real de extensões neste navegador de desenvolvimento é bloqueado por política administrativa; foi validado o DOM com APIs simuladas e o worker com testes locais.
 Executar testes: node tests/refresh.test.cjs e node tests/session.test.cjs.
 Teste opcional de DOM: node tests/browser.cjs (exige Playwright e /usr/bin/chromium).
+
+PREENCHIMENTO SALVO — v1.1.0
+A tela de senha recebe um clique nativo no fundo à direita do cartão Microsoft. O ponto é calculado pela posição do cartão e pelo tamanho da janela, incluindo a área acima e à direita mostrada pelo usuário. Não utiliza coordenadas fixas da imagem.
+O Chrome pode pedir aprovação da nova permissão debugger ao atualizar a extensão e mostrar um aviso de depuração. A conexão de depuração é encerrada após o clique. A rotina só envia eventos de mouse; não consulta senha, cookies ou tráfego pela interface de depuração.
+O clique é tentado uma vez por documento e verificação. Se a página mudar ou não houver espaço livre, a rotina não clica e informa que é preciso conferir a aba. Políticas da empresa podem bloquear a depuração.
+Depois do clique, aguarda o Chrome disponibilizar a senha salva e pelo menos dois segundos antes de Entrar. Um clique não garante o desbloqueio do preenchimento, e MFA continua exigindo sua ação.
+Atualize na mesma pasta, recarregue a extensão e depois a aba Microsoft. Clique em Verificar sessão para iniciar uma nova tentativa.
+Os eventos de mouse foram testados com a API debugger simulada; o fluxo de preparação e Entrar foi validado em DOM Microsoft simulado. Não foi comprovado o desbloqueio real do preenchimento no perfil do usuário.

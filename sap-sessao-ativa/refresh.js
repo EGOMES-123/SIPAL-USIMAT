@@ -2,8 +2,8 @@
 const REFRESH_ALARM='sap-session-refresh';
 function refreshOptions(raw){
  const min=Number(raw.minSeconds),max=Number(raw.maxSeconds),limit=Number(raw.limit);
- if(!Number.isInteger(min)||min<30||min>86400||!Number.isInteger(max)||max<min||max>86400)throw Error('Use intervalos inteiros de 30 a 86400 segundos; máximo maior ou igual ao mínimo.');
- if(!Number.isInteger(limit)||limit<1||limit>1000)throw Error('Use um limite de 1 a 1000 recargas.');
+ if(!Number.isInteger(min)||min<15||min>86400||!Number.isInteger(max)||max<min||max>86400)throw Error('Use intervalos inteiros de 15 a 86400 segundos; máximo maior ou igual ao mínimo.');
+ if(!Number.isInteger(limit)||limit<0||limit>1000)throw Error('Use um limite de 0 a 1000 recargas (0 = sem limite).');
  return {minSeconds:min,maxSeconds:max,limit,bypassCache:raw.bypassCache===true,monitor:raw.monitor===true,stopOnChange:raw.stopOnChange!==false};
 }
 function refreshDelay(options){return (options.minSeconds+Math.floor(Math.random()*(options.maxSeconds-options.minSeconds+1)))*1000;}
@@ -20,12 +20,14 @@ let refreshFlight=null;
 async function refreshSave(state){await chrome.storage.session.set({refreshState:state});return state;}
 async function refreshSchedule(state){
  if(!state.enabled){await chrome.alarms.clear(REFRESH_ALARM);return refreshSave(state)}
- state.nextAt=Date.now()+refreshDelay(state.options);await refreshSave(state);await chrome.alarms.create(REFRESH_ALARM,{when:state.nextAt});return state;
+ state.nextAt=Date.now()+refreshDelay(state.options);await refreshSave(state);await chrome.alarms.create(REFRESH_ALARM,{when:Math.max(state.nextAt,Date.now()+30000)});
+ try{await chrome.scripting.executeScript({target:{tabId:state.tabId,frameIds:[0]},files:['refresh-clock.js']});}catch{}
+ return state;
 }
 async function refreshPause(state,message){state.enabled=false;state.nextAt=null;state.message=message;await chrome.alarms.clear(REFRESH_ALARM);return refreshSave(state)}
 function refreshTick(){if(refreshFlight)return refreshFlight;refreshFlight=serial(refreshTickLocked).finally(()=>{refreshFlight=null});return refreshFlight;}
 async function refreshTickLocked(){
- const {refreshState:state}=await chrome.storage.session.get('refreshState');if(!state?.enabled)return;
+ const {refreshState:state}=await chrome.storage.session.get('refreshState');if(!state?.enabled||state.nextAt>Date.now())return;
  try{
   const {sessionRun:run}=await chrome.storage.session.get('sessionRun');
   if(run?.active){
@@ -43,18 +45,27 @@ async function refreshTickLocked(){
    if(state.hash&&state.hash!==hash){state.changes++;state.lastChangeAt=Date.now();if(state.options.stopOnChange)return refreshPause(state,'Mudança detectada. Atualização pausada para você conferir a página.');}
    state.hash=hash;
   }
-  if(state.count>=state.options.limit)return refreshPause(state,'Limite de recargas atingido.');
+  if(state.options.limit>0&&state.count>=state.options.limit)return refreshPause(state,'Limite de recargas atingido.');
   // Recheck the selected URL after inspection to avoid navigating an unrelated page.
   const current=await chrome.tabs.get(state.tabId);if(!refreshHome(current.url))return refreshPause(state,'Pausado: a aba mudou durante a verificação.');
   await chrome.tabs.reload(state.tabId,{bypassCache:state.options.bypassCache});
-  state.count++;state.failures=0;state.lastReloadAt=Date.now();state.message='Página inicial atualizada. '+state.count+'/'+state.options.limit+' recargas.';
-  if(state.count>=state.options.limit)return refreshPause(state,state.message+' Limite atingido.');
+  state.count++;state.failures=0;state.lastReloadAt=Date.now();state.message='Página inicial atualizada. '+state.count+(state.options.limit>0?'/'+state.options.limit:' · sem limite')+' recargas.';
+  if(state.options.limit>0&&state.count>=state.options.limit)return refreshPause(state,state.message+' Limite atingido.');
   return refreshSchedule(state);
  }catch(error){state.failures=(state.failures||0)+1;state.message='Falha ao verificar/atualizar a aba ('+state.failures+'/3).';if(state.failures>=3)return refreshPause(state,state.message+' Pausado; confira a aba.');return refreshSchedule(state)}
 }
 chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name===REFRESH_ALARM)refreshTick().catch(()=>{});});
 chrome.tabs.onRemoved.addListener(tabId=>{serial(async()=>{const {refreshState:state}=await chrome.storage.session.get('refreshState');if(state?.tabId===tabId)await refreshPause(state,'Aba fechada. Atualização encerrada.');}).catch(()=>{});});
 chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
+ if(['refresh-clock-config','refresh-due'].includes(msg.type)){
+  (async()=>{
+   const {refreshState:state}=await chrome.storage.session.get('refreshState');
+   if(sender.id!==chrome.runtime.id||sender.frameId!==0||sender.tab?.id!==state?.tabId||!refreshHome(sender.url))return {enabled:false};
+   if(msg.type==='refresh-clock-config')return {enabled:state.enabled,nextAt:state.nextAt};
+   await refreshTick();return {ok:true};
+  })().then(reply).catch(()=>reply({enabled:false}));return true;
+ }
+
  if(!['refresh-start','refresh-stop','refresh-info'].includes(msg.type))return;
  if(sender.tab||sender.id!==chrome.runtime.id)return;
  (async()=>{

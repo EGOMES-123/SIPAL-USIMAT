@@ -2,7 +2,7 @@
 (()=>{
  if(location.hostname!=='login.microsoftonline.com')return;
  globalThis.sapSessionLoginStop?.();let stopped=false;globalThis.sapSessionLoginStop=()=>{stopped=true;clearInterval(timer)};
- const acted=new Set();let busy=false,lastPassword=null,readySince=null,lastStage='';
+ const acted=new Set();let busy=false,lastPassword=null,readySince=null,lastStage='',preparedPassword=null,preparationError='';
  const visible=e=>{
   if(!e?.isConnected||!e.getBoundingClientRect().width||!e.getBoundingClientRect().height)return false;
   const css=getComputedStyle(e);return css.visibility!=='hidden'&&css.display!=='none';
@@ -56,11 +56,27 @@
    const password=passwordField();
    if(password){
     if(acted.has('signin')){await stage('submitted','Entrar já foi acionado uma vez. Aguardando a resposta da Microsoft.');return;}
-    if(lastPassword!==password){lastPassword=password;readySince=null;}
+    if(lastPassword!==password){lastPassword=password;readySince=null;preparedPassword=null;preparationError='';}
     if(!sameAccount){readySince=null;await stage('account-mismatch','A conta exibida não corresponde exatamente ao e-mail configurado. Confira a janela de login.');return;}
     if(!enabled(password)){readySince=null;await stage('password-disabled','O campo de senha está desabilitado pela página. Aguardando liberação.');return;}
+    if(preparedPassword!==password){
+     const card=document.getElementById('lightbox')||document.querySelector('.lightbox,.sign-in-box');
+     const rect=card?.getBoundingClientRect();
+     const point=rect?{x:rect.right+(innerWidth-rect.right)/2,y:rect.top>80?rect.top/2:rect.top+rect.height/2}:null;
+     if(!point||!document.elementFromPoint(point.x,point.y)||point.x<rect.right+24||point.x>innerWidth-20){
+      preparationError='Não há espaço livre à direita do cartão. Aumente a janela ou clique manualmente no fundo.';
+      preparedPassword=password;
+     }else{
+      preparedPassword=password;readySince=null;
+      const result=await chrome.runtime.sendMessage({type:'login-background-click',sessionId:run.sessionId,point});
+      if(!result?.ok)preparationError=result?.error||'Clique manualmente no fundo à direita do cartão.';
+      await stage(result?.ok?'background-clicked':'background-click-error',result?.ok?'Fundo à direita clicado uma vez. Aguardando o preenchimento salvo e 2 segundos antes de Entrar.':preparationError);
+      return;
+     }
+    }
     if(!password.value){
      readySince=null;
+     if(preparationError){await stage('background-click-error',preparationError);return;}
      await stage(autofilled(password)?'password-preview':'password-empty',autofilled(password)?'O Chrome mostra a senha, mas ainda não liberou o valor para envio. Abra a aba Microsoft da sessão e confirme o preenchimento salvo.':'Aguardando senha salva no Chrome. Abra a aba Microsoft da sessão para conferir o preenchimento.');return;
     }
     if(!visible(button)||!signIn(button)){readySince=null;await stage('button-missing','Senha disponível, mas o botão Entrar não foi identificado. Confira a janela de login.');return;}

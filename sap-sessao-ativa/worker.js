@@ -49,10 +49,11 @@ chrome.runtime.onInstalled.addListener(arm);
 chrome.runtime.onStartup.addListener(async()=>{await chrome.storage.local.set({enabled:false});await arm()});
 chrome.tabs.onRemoved.addListener(tabId=>{serial(async()=>{const {sessionRun:run}=await chrome.storage.session.get('sessionRun');if(run?.tabId===tabId){run.active=false;run.phase='stopped';run.message='Aba auxiliar fechada. Abra uma nova verificação pelo popup.';await saveRun(run);}}).catch(()=>{});});
 chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
- if(['session-config','session-progress','session-home-done'].includes(msg.type)){
+ if(['session-config','session-progress','session-home-done','login-background-click'].includes(msg.type)){
   serial(async()=>{
    const run=await expireRun();
    if(sender.id!==chrome.runtime.id||sender.frameId!==0||!allowedUrl(sender.url)||!run?.active||sender.tab?.id!==run.tabId)return {active:false};
+   if(msg.type==='login-background-click')return loginBackgroundClick(msg,sender,run);
    if(msg.type==='session-config')return {...run,account:(await settings()).account};
    if(msg.sessionId&&msg.sessionId!==run.sessionId)return {ok:false};
    if(msg.type==='session-home-done'){
@@ -77,4 +78,4 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
   return {settings:cfg,run,refresh:refreshState};
  })().then(reply).catch(error=>reply({error:error.message}));return true;
 });
-importScripts('refresh.js');
+importScripts('refresh.js','background-click.js');
