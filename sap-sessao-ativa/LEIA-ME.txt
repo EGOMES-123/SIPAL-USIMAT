@@ -1,10 +1,16 @@
+TEMPORIZADOR v1.3.0
+Contagem regressiva no popup e no ícone da extensão: 00:15 até 00:00. Fixe a extensão na barra para ver o indicador.
+II indica atualização pausada; LOGIN indica assistência de login; ESP indica espera por condição segura. O texto de ajuda do ícone detalha o estado. O popup mostra também Pausado ou Login em andamento.
+Mantém 15 segundos, sem limite, e o clique no fundo Microsoft. O contador usa a mesma data de vencimento da recarga. Mensagens por segundo atualizam o ícone; abas inativas, suspensão e economia de energia podem atrasar o contador e a recarga.
+O estado dos controles e o fluxo foram testados em páginas simuladas; integração real com SAP/Chrome do usuário permanece por confirmar.
+
 ATUALIZAÇÃO v1.2.0 — 15 SEGUNDOS, SEM LIMITE E CLIQUE NO FUNDO
 Pause tudo antes de substituir os arquivos. Recarregue a extensão e depois a aba Microsoft/SAP. Se o Chrome solicitar a nova permissão debugger, aprove para habilitar o clique nativo no fundo do cartão.
 No popup, configure Mínimo=15, Máximo=15 e Limite=0; deixe Pausar ao detectar mudança desmarcado se quiser atualização contínua. Clique em Iniciar nesta aba, na página inicial SAP.
 O temporizador da página agenda os 15 segundos; alarmes do Chrome são uma recuperação de apoio. Abas inativas, economia de energia e suspensão podem atrasar recargas. Não é um temporizador de tempo real.
 Sem limite de quantidade não significa recarregar o login: consultas, campos em uso, erros e a etapa Microsoft continuam protegidos. Pausar tudo continua disponível.
 
-SAP SESSÃO ATIVA — versão independente 1.2.0
+SAP SESSÃO ATIVA — versão independente 1.3.0
 
 INSTALAÇÃO
 1. Desative a extensão antiga SAP Sessão Automática 0.10.9.
@@ -38,7 +44,7 @@ A extensão independente não consegue coordenar reservas de abas de OUTRAS exte
 Abrir SAP, clicar na lupa ou recarregar não comprova renovação da sessão no servidor. Esta extensão não corrige HTTP 0, certificados Fortinet nem falhas do back-end SAP.
 
 VALIDAÇÃO
-27 testes automatizados aprovados. No Chromium, testes com páginas e APIs simuladas validaram o popup, Pausar tudo e um único envio de Entrar no DOM de login.
+31 testes automatizados aprovados. No Chromium, testes com páginas e APIs simuladas validaram o popup, Pausar tudo e um único envio de Entrar no DOM de login.
 Não houve acesso a credenciais nem autenticação real SAP/Microsoft. O carregamento real de extensões neste navegador de desenvolvimento é bloqueado por política administrativa; foi validado o DOM com APIs simuladas e o worker com testes locais.
 Executar testes: node tests/refresh.test.cjs e node tests/session.test.cjs.
 Teste opcional de DOM: node tests/browser.cjs (exige Playwright e /usr/bin/chromium).

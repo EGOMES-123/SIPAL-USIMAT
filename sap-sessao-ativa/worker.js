@@ -1,3 +1,4 @@
+importScripts('timer-view.js');
 const HOME='https://s4.sipal.com.br/sap/bc/ui2/flp#Shell-home';
 let taskQueue=Promise.resolve();
 function serial(fn){const result=taskQueue.catch(()=>{}).then(fn);taskQueue=result.catch(()=>{});return result;}
@@ -7,7 +8,8 @@ async function settings(){return {account:'',enabled:false,...await chrome.stora
 async function saveRun(run){
  const {events=[]}=await chrome.storage.session.get('events');
  if(events[0]?.message!==run.message)events.unshift({time:Date.now(),phase:run.phase,message:run.message});
- await chrome.storage.session.set({sessionRun:run,events:events.slice(0,30)});return run;
+ await chrome.storage.session.set({sessionRun:run,events:events.slice(0,30)});
+ if(typeof updateRefreshBadge==='function')await updateRefreshBadge();return run;
 }
 async function expireRun(){
  const {sessionRun:run}=await chrome.storage.session.get('sessionRun');
@@ -44,7 +46,7 @@ chrome.alarms.onAlarm.addListener(alarm=>{
  if(alarm.name==='sap-session-check')sessionStart().catch(()=>{});
  if(alarm.name==='sap-session-watch')serial(expireRun).catch(()=>{});
 });
-async function arm(){await chrome.alarms.create('sap-session-check',{periodInMinutes:4});await chrome.alarms.create('sap-session-watch',{periodInMinutes:1});}
+async function arm(){await chrome.alarms.create('sap-session-check',{periodInMinutes:4});await chrome.alarms.create('sap-session-watch',{periodInMinutes:1});await updateRefreshBadge();}
 chrome.runtime.onInstalled.addListener(arm);
 chrome.runtime.onStartup.addListener(async()=>{await chrome.storage.local.set({enabled:false});await arm()});
 chrome.tabs.onRemoved.addListener(tabId=>{serial(async()=>{const {sessionRun:run}=await chrome.storage.session.get('sessionRun');if(run?.tabId===tabId){run.active=false;run.phase='stopped';run.message='Aba auxiliar fechada. Abra uma nova verificação pelo popup.';await saveRun(run);}}).catch(()=>{});});

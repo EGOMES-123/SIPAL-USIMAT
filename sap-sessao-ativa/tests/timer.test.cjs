@@ -1,0 +1,4 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const {refreshTimerView:view}=require('../timer-view.js');
+test('countdown rounds upward and reaches zero without going negative',()=>{const state={enabled:true,nextAt:16000};assert.equal(view(state,null,1000).text,'00:15');assert.equal(view(state,null,15001).text,'00:01');assert.equal(view(state,null,17000).text,'00:00')});
+test('paused and login states override countdown',()=>{assert.equal(view({enabled:false},null).text,'Pausado');assert.equal(view({enabled:true,nextAt:16000},{active:true},1000).badge,'LOGIN')});
+test('waiting condition is explicit on badge and long intervals remain readable',()=>{assert.equal(view({enabled:true,nextAt:16000,message:'Aguardando SAP.'},null,1000).badge,'ESP');assert.equal(view({enabled:true,nextAt:3601000},null,1000).text,'1:00:00')});

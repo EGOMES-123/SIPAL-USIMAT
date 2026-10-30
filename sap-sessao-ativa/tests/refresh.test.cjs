@@ -1,9 +1,9 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');const fs=require('node:fs');const path=require('node:path');const {webcrypto}=require('node:crypto');
 const code=fs.readFileSync(path.join(__dirname,'../refresh.js'),'utf8');
 function setup({lease=null,run=null,url='https://s4.sipal.com.br/sap/bc/ui2/flp#Shell-home',probe={ready:true,text:'Home'},options={},failure=false}={}){
- const state={sessionRun:run,refreshState:{enabled:true,tabId:1,count:0,changes:0,options:{minSeconds:30,maxSeconds:30,limit:10,monitor:true,stopOnChange:true,...options}}};const calls=[];const event={addListener(){}};
- const ctx={URL,TextEncoder,crypto:webcrypto,serial:fn=>fn(),chrome:{runtime:{onMessage:event},tabs:{onRemoved:event,get:async()=>({id:1,url,status:'complete'}),reload:async(...args)=>calls.push(args)},storage:{session:{get:async()=>state,set:async val=>Object.assign(state,val)},local:{get:async()=>({robotRun:run})}},alarms:{onAlarm:event,create:async()=>{},clear:async()=>{}},scripting:{executeScript:async()=>{if(failure)throw Error('blocked');return [{result:probe}]}}}};
- vm.runInNewContext(code,ctx);return {ctx,state,calls,tick:()=>ctx.refreshTick()};
+ const state={sessionRun:run,refreshState:{enabled:true,tabId:1,count:0,changes:0,options:{minSeconds:30,maxSeconds:30,limit:10,monitor:true,stopOnChange:true,...options}}};const calls=[],badges=[];const event={addListener(){}};
+ const ctx={URL,TextEncoder,crypto:webcrypto,serial:fn=>fn(),chrome:{action:{setBadgeText:async value=>badges.push(value.text),setBadgeBackgroundColor:async()=>{},setTitle:async()=>{}},runtime:{onMessage:event},tabs:{onRemoved:event,get:async()=>({id:1,url,status:'complete'}),reload:async(...args)=>calls.push(args)},storage:{session:{get:async()=>state,set:async val=>Object.assign(state,val)},local:{get:async()=>({robotRun:run})}},alarms:{onAlarm:event,create:async()=>{},clear:async()=>{}},scripting:{executeScript:async()=>{if(failure)throw Error('blocked');return [{result:probe}]}}}};
+ vm.createContext(ctx);vm.runInContext(fs.readFileSync(path.join(__dirname,'../timer-view.js'),'utf8'),ctx);vm.runInContext(code,ctx);return {ctx,state,calls,badges,tick:()=>ctx.refreshTick()};
 }
 test('invalid intervals and cycle limits are rejected',()=>{const {ctx}=setup();for(const raw of [{minSeconds:0,maxSeconds:30,limit:1},{minSeconds:60,maxSeconds:30,limit:1},{minSeconds:30,maxSeconds:30,limit:-1}])assert.throws(()=>ctx.refreshOptions(raw))});
 test('fixed and randomized delays remain in configured bounds',()=>{const {ctx}=setup();assert.equal(ctx.refreshDelay({minSeconds:30,maxSeconds:30}),30000);for(let i=0;i<100;i++){const delay=ctx.refreshDelay({minSeconds:30,maxSeconds:50});assert.ok(delay>=30000&&delay<=50000)}});
@@ -18,3 +18,5 @@ test('three inspection failures stop automatic retries',async()=>{const app=setu
 
 test('15 seconds and unlimited reloads are accepted',async()=>{const app=setup({options:{minSeconds:15,maxSeconds:15,limit:0,monitor:false}});assert.equal(app.ctx.refreshOptions({minSeconds:15,maxSeconds:15,limit:0}).limit,0);for(let i=0;i<12;i++){app.state.refreshState.nextAt=0;await app.tick()}assert.equal(app.calls.length,12);assert.equal(app.state.refreshState.enabled,true)});
 test('early wake cannot cause premature reload',async()=>{const app=setup();app.state.refreshState.nextAt=Date.now()+15000;await app.tick();assert.equal(app.calls.length,0)});
+
+test('toolbar badge switches from countdown to paused',async()=>{const app=setup();await app.tick();assert.match(app.badges.at(-1),/^00:30$/);await app.ctx.refreshPause(app.state.refreshState,'Pausado');assert.equal(app.badges.at(-1),'II')});

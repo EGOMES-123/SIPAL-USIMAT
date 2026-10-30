@@ -1,3 +1,12 @@
+async function updateRefreshBadge(){
+ try{
+  const {refreshState,sessionRun}=await chrome.storage.session.get(['refreshState','sessionRun']);
+  const view=refreshTimerView(refreshState,sessionRun);
+  await chrome.action.setBadgeBackgroundColor({color:view.color});
+  await chrome.action.setBadgeText({text:view.badge});
+  await chrome.action.setTitle({title:'SAP Sessão Ativa · '+view.title});
+ }catch{}
+}
 // Original implementation inspired by refresh/monitor workflows; no third-party extension code.
 const REFRESH_ALARM='sap-session-refresh';
 function refreshOptions(raw){
@@ -17,7 +26,7 @@ function refreshProbe(){
  return {blocked:blocked||editing,failed:failure,ready:document.readyState==='complete',text:(document.body?.innerText||'').slice(0,250000)};
 }
 let refreshFlight=null;
-async function refreshSave(state){await chrome.storage.session.set({refreshState:state});return state;}
+async function refreshSave(state){await chrome.storage.session.set({refreshState:state});await updateRefreshBadge();return state;}
 async function refreshSchedule(state){
  if(!state.enabled){await chrome.alarms.clear(REFRESH_ALARM);return refreshSave(state)}
  state.nextAt=Date.now()+refreshDelay(state.options);await refreshSave(state);await chrome.alarms.create(REFRESH_ALARM,{when:Math.max(state.nextAt,Date.now()+30000)});
@@ -61,7 +70,7 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
   (async()=>{
    const {refreshState:state}=await chrome.storage.session.get('refreshState');
    if(sender.id!==chrome.runtime.id||sender.frameId!==0||sender.tab?.id!==state?.tabId||!refreshHome(sender.url))return {enabled:false};
-   if(msg.type==='refresh-clock-config')return {enabled:state.enabled,nextAt:state.nextAt};
+   if(msg.type==='refresh-clock-config'){await updateRefreshBadge();return {enabled:state.enabled,nextAt:state.nextAt};}
    await refreshTick();return {ok:true};
   })().then(reply).catch(()=>reply({enabled:false}));return true;
  }
@@ -80,3 +89,5 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
   });
  })().then(reply).catch(error=>reply({error:error.message}));return true;
 });
+
+chrome.tabs.onUpdated?.addListener((tabId,change)=>{if(change.url&&!refreshHome(change.url))serial(async()=>{const {refreshState:state}=await chrome.storage.session.get('refreshState');if(state?.enabled&&state.tabId===tabId)await refreshPause(state,'Pausado: a aba saiu da página inicial SAP.');}).catch(()=>{});});

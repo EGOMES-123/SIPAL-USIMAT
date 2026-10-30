@@ -10,9 +10,9 @@
    if(stopped||!state?.enabled)return;
    timer=setTimeout(async()=>{
     if(stopped)return;
-    try{await chrome.runtime.sendMessage({type:'refresh-due'})}catch{}
+    if(Date.now()>=state.nextAt)try{await chrome.runtime.sendMessage({type:'refresh-due'})}catch{}
     if(!stopped)await arm();
-   },Math.max(250,state.nextAt-Date.now()));
+   },Math.max(250,Math.min(1000,state.nextAt-Date.now())));
   }catch{}
  };
  void arm();

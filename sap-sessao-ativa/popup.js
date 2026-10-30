@@ -10,6 +10,7 @@ async function render(){
   if(!loaded){loaded=true;$('account').value=info.settings.account;$('enabled').checked=info.settings.enabled;
    if(info.refresh?.options){const o=info.refresh.options;$('min').value=o.minSeconds;$('max').value=o.maxSeconds;$('limit').value=o.limit;$('cache').checked=o.bypassCache;$('monitor').checked=o.monitor;$('stopChange').checked=o.stopOnChange;}}
   $('sessionStatus').textContent=(info.run?.message||'Salve o e-mail e clique em Verificar sessão.')+'\nVerificação periódica: '+(info.settings.enabled?'ativada':'desativada');
+  const view=refreshTimerView(info.refresh,info.run);$('countdown').textContent=view.text;$('countdownLabel').textContent=view.title;
   const r=info.refresh;$('refreshStatus').textContent=r?(r.message||'Atualização desativada.')+'\n'+(r.count||0)+' recargas · '+(r.changes||0)+' mudanças'+(r.enabled&&r.nextAt?'\nPróxima verificação: '+new Date(r.nextAt).toLocaleTimeString('pt-BR'):''):'Atualização desativada.';
  }catch(error){$('feedback').textContent=error.message}finally{loading=false}
 }
