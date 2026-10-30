@@ -1,11 +1,11 @@
-USIMAT - ADM · SAP Sessão Ativa 1.8.0
+USIMAT - ADM · SAP Sessão Ativa 1.9.0
 
 INSTALAÇÃO PARA CADA COLABORADOR
 1. Baixe o ZIP compartilhado e extraia em uma pasta permanente do seu computador.
 2. No Chrome, abra chrome://extensions. Ative Modo do desenvolvedor, clique em Carregar sem compactação e selecione a pasta sap-sessao-ativa, que contém manifest.json.
 3. Fixe o ícone da extensão na barra.
-4. Em Sessão, informe SEU e-mail Microsoft. Não informe sua senha à extensão; o preenchimento salvo pertence ao Chrome.
-5. Deixe Recuperar login marcado, salve e clique em Entrar e iniciar.
+4. Em Sessão, informe SEU e-mail Microsoft e clique em Salvar e ativar. Não informe sua senha à extensão; o preenchimento salvo pertence ao Chrome.
+5. Deixe Recuperar login marcado. Salvar e ativar já inicia todo o fluxo, sem outro clique.
 6. O SAP abre em segundo plano. Ao ficar pronto, a contagem começa: padrão de 15 segundos sem limite.
 7. Se houver MFA ou confirmação do preenchimento salvo, clique em Abrir login. Esse é o único comando que traz a aba à frente.
 8. Para interromper tudo, use Pausar tudo.

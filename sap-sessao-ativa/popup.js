@@ -33,8 +33,8 @@ async function render(){
 }
 function action(id,fn){$(id).onclick=async()=>{const b=$(id);b.disabled=true;$('feedback').textContent='';try{await fn();await render()}catch(e){$('feedback').textContent=e.message}finally{b.disabled=false}}}
 const save=()=>send({type:'settings-save',account:$('account').value,enabled:$('enabled').checked,reconnect:$('reconnect').checked});
-action('save',async()=>{await save();$('feedback').textContent='Configuração salva.'});
-action('verify',async()=>{await save();await send({type:'session-start'})});
+action('save',async()=>{await save();$('enabled').checked=true;$('feedback').textContent='E-mail salvo. Sessão ativada e SAP iniciado em segundo plano.'});
+action('verify',async()=>{await save();$('enabled').checked=true});
 action('open',()=>send({type:'session-open'}));
 action('quickLogin',()=>send({type:'session-open'}));
 $('configureLogin').onclick=()=>{selectTab('session');$('account').focus()};

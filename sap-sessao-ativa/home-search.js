@@ -1,34 +1,23 @@
+// Detect a usable home page without clicking the search button or changing focus.
 (()=>{
  if(window.top!==window)return;
- globalThis.sapSessionSearchStop?.();globalThis.sapSessionSearchStop=()=>clearInterval(timer);
- const start=Date.now();let busy=false,clicked=false,reported=false;
- const visible=e=>!!e&&e.isConnected&&e.getBoundingClientRect().width>0&&e.getBoundingClientRect().height>0&&!e.disabled&&e.getAttribute('aria-disabled')!=='true';
- function findSearch(){
- // Restrict to the Fiori shell header to avoid unrelated application buttons.
- const direct=['searchFieldInShell-search','shell-header-search','shellSearchButton'];
- for(const id of direct){const e=document.getElementById(id);if(visible(e))return e.closest('button,[role=button]')||e;}
- const root=document.getElementById('shell-header')||document.querySelector('header,[role=banner],.sapUshellShellHead');
- if(!root)return null;
- const candidates=[...root.querySelectorAll('button,[role=button]')].filter(visible).filter(e=>{
- const label=[e.getAttribute('aria-label'),e.getAttribute('title'),e.getAttribute('data-sap-ui-icon-content'),e.textContent].filter(Boolean).join(' ').trim();
- return /(?:^|\b)(?:procurar|pesquisar|pesquisa|buscar|busca|search)(?:\b|$)/i.test(label)&&!/avançad|advanced/i.test(label);
- });
- return candidates.length===1?candidates[0]:null;
- }
+ globalThis.sapSessionSearchStop?.();let stopped=false,busy=false,readyAt=null;
+ const started=Date.now();
+ globalThis.sapSessionSearchStop=()=>{stopped=true;clearInterval(timer)};
+ const visible=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=='hidden'};
  const timer=setInterval(async()=>{
- if(busy)return;busy=true;
- try{
- if(Date.now()-start>180000){clearInterval(timer);return;}
- const c=await chrome.runtime.sendMessage({type:'session-config'});if(!c?.active||!c.sessionMaintenance||c.mode!=='login')return;
- if(!location.hash.startsWith('#Shell-home'))return;
- if(clicked)return;
- const button=findSearch();
- if(!button){if(!reported&&Date.now()-start>20000){reported=true;await chrome.runtime.sendMessage({type:'session-progress',sessionId:c.sessionId,phase:'waiting',message:'Página aberta, mas lupa do cabeçalho ainda não identificada de forma única.'});}return;}
- // Mark before clicking so no later timer tick can click a second time.
- clicked=true;clearInterval(timer);
- button.click();
- await chrome.runtime.sendMessage({type:'session-progress',sessionId:c.sessionId,phase:'waiting',message:'Clique único acionado na lupa Procurar.'});
- await chrome.runtime.sendMessage({type:'session-home-done',sessionId:c.sessionId});
- }catch{clearInterval(timer);}finally{busy=false;}
+  if(stopped||busy)return;busy=true;
+  try{
+   if(Date.now()-started>180000){globalThis.sapSessionSearchStop();return;}
+   const run=await chrome.runtime.sendMessage({type:'session-config'});
+   if(!run?.active||!run.sessionMaintenance||run.mode!=='login')return;
+   if(location.hash!=='#Shell-home'||document.readyState!=='complete'){readyAt=null;return;}
+   const text=(document.body?.innerText||'').trim();
+   const waiting=!text||(text.length<100&&/carregando|loading|aguarde/i.test(text))||/erro de back.end|encerramento da aplica[cç][aã]o|HTTP\s*0\b|sess[aã]o (?:expirada|encerrada)/i.test(text)||[...document.querySelectorAll('[aria-busy="true"],[role="progressbar"],input[type="password"]')].some(visible);
+   if(waiting){readyAt=null;return;}
+   readyAt??=Date.now();if(Date.now()-readyAt<1000)return;
+   const response=await chrome.runtime.sendMessage({type:'session-home-done',sessionId:run.sessionId,readiness:'home-loaded'});
+   if(response?.ok)globalThis.sapSessionSearchStop();
+  }catch(error){if(/context invalidated/i.test(error.message||''))globalThis.sapSessionSearchStop()}finally{busy=false}
  },1000);
 })();

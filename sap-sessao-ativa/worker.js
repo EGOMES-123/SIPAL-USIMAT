@@ -21,7 +21,9 @@ async function sessionStartLocked(manual){
  const cfg=await settings();if(!cfg.enabled&&!manual)return {ok:true};
  if(!accountValid(cfg.account))throw Error('Salve um e-mail Microsoft válido antes de verificar a sessão.');
  const prior=await expireRun();
- if(prior?.active)return {ok:true,message:'Verificação já em andamento.'};
+ if(prior?.active){if(manual){if(!prior.startRefreshOnReady){prior.startRefreshOnReady=true;await saveRun(prior);}
+  try{const tab=await chrome.tabs.get(prior.tabId);if(refreshHome(tab.url))await chrome.scripting.executeScript({target:{tabId:prior.tabId},files:['home-search.js']});}catch{}
+ }return {ok:true,message:'Verificação já em andamento.'};}
  if(prior?.phase==='attention'&&!manual)return {ok:false,error:prior.message};
  const {helperTabId}=await chrome.storage.session.get('helperTabId');let tab;
  if(Number.isInteger(helperTabId)){try{tab=await chrome.tabs.get(helperTabId)}catch{}}
@@ -60,7 +62,7 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
    if(msg.sessionId&&msg.sessionId!==run.sessionId)return {ok:false};
    if(msg.type==='session-home-done'){
     if(!sender.url.startsWith('https://s4.sipal.com.br/'))return {ok:false};
-    run.active=false;run.phase='done';run.message='SAP acessível; lupa acionada uma vez. Renovação no servidor não comprovada.';
+    run.active=false;run.phase='done';run.message='Página inicial SAP carregada. Assistência concluída; iniciando atualização.';
    }else{run.phase=msg.phase==='login'?'login':'waiting';run.message=String(msg.message||'').slice(0,330);}
    await saveRun(run);
    if(msg.type==='session-home-done'&&run.startRefreshOnReady)await startRefreshAfterLogin(run);
@@ -70,7 +72,11 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
  if(!['settings-save','session-info','session-start','session-open','pause-all','diagnostics'].includes(msg.type))return;
  if(sender.tab||sender.id!==chrome.runtime.id)return;
  (async()=>{
-  if(msg.type==='settings-save')return serial(async()=>{const account=String(msg.account||'').trim().toLowerCase();if(!accountValid(account))throw Error('Informe um e-mail válido.');await chrome.storage.local.set({account,enabled:msg.enabled===true,reconnect:msg.reconnect!==false});return {ok:true};});
+  if(msg.type==='settings-save')return serial(async()=>{
+   const account=String(msg.account||'').trim().toLowerCase();if(!accountValid(account))throw Error('Informe um e-mail válido.');
+   await chrome.storage.local.set({account,enabled:true,reconnect:msg.reconnect!==false});
+   const result=await sessionStartLocked(true);return {...result,activated:true};
+  });
   if(msg.type==='session-start')return sessionStart(true);
   if(msg.type==='pause-all')return pauseEverything();
   if(msg.type==='session-open'){

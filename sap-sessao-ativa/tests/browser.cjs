@@ -3,10 +3,10 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  const root=path.resolve(__dirname,'..');const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  try{
   const context=await browser.newContext();const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.8.0'}),sendMessage:async msg=>{
+  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.9.0'}),sendMessage:async msg=>{
    const s=window.testState;
    if(msg.type==='session-info')return s;
-   if(msg.type==='settings-save'){s.settings={account:msg.account,enabled:msg.enabled};return {ok:true}}
+   if(msg.type==='settings-save'){s.settings={account:msg.account,enabled:true};s.run={message:'Sessão em verificação.'};return {ok:true}}
    if(msg.type==='session-start'){s.run={message:'Sessão em verificação.'};return {ok:true}}
    if(msg.type==='refresh-start'){s.refresh={message:'Programado.',enabled:true,nextAt:Date.now()+15000,options:msg.options,count:0,changes:0};return s.refresh}
    if(msg.type==='refresh-stop'){s.refresh.enabled=false;s.refresh.message='Atualização pausada.';return s.refresh}
@@ -14,7 +14,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
    return {ok:true};
   }},tabs:{query:async()=>[{id:7}]}}});
   await page.route('https://fixture.test/**',route=>{const name=new URL(route.request().url()).pathname.slice(1)||'popup.html';if(!['popup.html','popup.js','timer-view.js','style.css'].includes(name))return route.abort();return route.fulfill({contentType:name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'text/html',body:fs.readFileSync(path.join(root,name),'utf8')})});
-  await page.goto('https://fixture.test/popup.html');await page.locator('#tab-session').click();await page.locator('#account').fill('test@example.com');await page.locator('#enabled').check();await page.locator('#verify').click();await page.waitForFunction(()=>document.getElementById('sessionStatus').textContent.includes('em verificação'));
+  await page.goto('https://fixture.test/popup.html');await page.locator('#tab-session').click();await page.locator('#account').fill('test@example.com');await page.locator('#save').click();await page.waitForFunction(()=>document.getElementById('sessionStatus').textContent.includes('em verificação'));
   await page.locator('#tab-interval').click();await page.locator('[data-mode=random]').click();await page.locator('#min').fill('60');await page.locator('#max').fill('120');await page.locator('#startRefresh').click();await page.waitForFunction(()=>document.getElementById('refreshStatus').textContent.includes('Programado'));
   assert.equal(await page.evaluate(()=>testState.refresh.options.maxSeconds),120);
   assert.match(await page.locator('#countdown').textContent(),/^00:1[45]$/);
@@ -35,6 +35,9 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   assert.equal((await probePage.evaluate(()=>refreshProbe())).blocked,false);
   await probePage.locator('#text').fill('Digitado pelo usuário');assert.equal((await probePage.evaluate(()=>refreshProbe())).summary.editedFields,1);
   await probePage.locator('#text').fill('');assert.equal((await probePage.evaluate(()=>refreshProbe())).blocked,false);
+  const home=await context.newPage();await home.route('https://s4.sipal.com.br/**',route=>route.fulfill({contentType:'text/html',body:'<h1>SAP · Página inicial</h1><p>Bem-vindo</p>'}));
+  await home.goto('https://s4.sipal.com.br/sap/bc/ui2/flp#Shell-home');await home.evaluate(()=>{window.homeReady=0;window.chrome.runtime={sendMessage:async msg=>{if(msg.type==='session-config')return {active:true,sessionMaintenance:true,mode:'login',sessionId:'home'};if(msg.type==='session-home-done'){window.homeReady++;return {ok:true}}return {ok:true}}}});
+  await home.addScriptTag({path:path.join(root,'home-search.js')});await home.waitForFunction(()=>window.homeReady===1,{},{timeout:6000});
   // Real Microsoft-like DOM; all runtime APIs simulated, no authentication request.
   const login=await context.newPage();await login.route('https://login.microsoftonline.com/**',route=>route.fulfill({contentType:'text/html',body:'<div id="lightbox" style="position:absolute;left:100px;top:200px;width:400px;height:300px"><div id="displayName">test@example.com</div><input id="i0118" type="password" value="fixture-only"><input id="idSIButton9" type="submit" value="Entrar"></div><script>window.clicks=0;document.getElementById("idSIButton9").onclick=e=>{e.preventDefault();window.clicks++}</script>'}));
   await login.goto('https://login.microsoftonline.com/fixture');await login.evaluate(()=>{window.backgroundClicks=0;window.chrome.runtime={sendMessage:async msg=>{if(msg.type==='login-background-click'){window.backgroundClicks++;return {ok:true}}return msg.type==='session-config'?{active:true,account:'test@example.com',sessionId:'fixture'}:{ok:true}}}});await login.addScriptTag({path:path.join(root,'login.js')});await login.waitForFunction(()=>window.clicks===1,{},{timeout:8000});await login.waitForTimeout(1500);assert.equal(await login.evaluate(()=>window.clicks),1);assert.equal(await login.evaluate(()=>window.backgroundClicks),1);
