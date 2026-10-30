@@ -1,0 +1,38 @@
+SAP SESSÃO ATIVA — versão independente 1.0.0
+
+INSTALAÇÃO
+1. Desative a extensão antiga SAP Sessão Automática 0.10.9.
+2. Se usa GO-LAUDOS integrado (v33/v34), desative nele a sessão automática e a atualização. Esta versão funciona por conta própria.
+3. Extraia o ZIP em uma pasta permanente. Abra chrome://extensions, ative Modo do desenvolvedor, clique em Carregar sem compactação e selecione a pasta sap-sessao-ativa (a pasta que contém manifest.json).
+4. Fixe SAP Sessão Ativa na barra do Chrome. Informe seu e-mail Microsoft e clique em Salvar.
+5. Clique em Verificar sessão. Uma única aba auxiliar abre em segundo plano. Use Abrir aba auxiliar para acompanhar login, confirmar preenchimento do Chrome ou fazer MFA.
+6. Se quiser verificações periódicas, marque Verificar a cada 4 minutos e salve.
+
+ATUALIZAÇÃO DE PÁGINA
+Abra a página inicial SAP (#Shell-home) e, com essa aba selecionada, abra o popup.
+Configure o intervalo mínimo e máximo: iguais = fixo; diferentes = aleatório. Mínimo de 30 segundos. Padrão de 240 segundos e 10 recargas.
+Ignorar cache vale apenas para as recargas programadas.
+Monitorar mudanças compara o texto visível da página principal entre verificações. Relógios e textos dinâmicos também podem mudar. Pausar ao detectar mudança interrompe novas recargas para você conferir.
+O limite também encerra o monitoramento; o resultado da última recarga não é comparado depois do encerramento.
+
+CONTROLES
+Pausar atualização: encerra atualização e monitoramento, sem desativar a assistência de sessão.
+Pausar tudo: encerra atualização, monitoramento e verificação de sessão.
+Baixar diagnóstico: exporta versão, estado e até 30 transições de sessão, sem e-mail, senha ou conteúdo de páginas.
+Após reiniciar o Chrome, as automações ficam desligadas. O e-mail permanece salvo; habilite novamente quando desejar. Suspensão do computador pode atrasar alarmes.
+
+PROTEÇÕES E LIMITES
+Nenhuma consulta SAP é executada. Não há captura de pesagens, Supabase, Netlify ou vínculo com GO-LAUDOS.
+Não fecha nem alterna janelas automaticamente; Abrir aba auxiliar traz a aba à frente quando solicitado por você.
+Não navega uma aba auxiliar que tenha sido usada para outro site. Feche essa aba e inicie uma nova verificação.
+A assistência para após 3 minutos sem conclusão. Não repete indefinidamente. Use Verificar sessão após conferir a aba Microsoft.
+A senha não é armazenada ou enviada pela extensão; o Chrome precisa fornecer o preenchimento salvo. MFA e algumas confirmações exigem participação do usuário.
+Recargas só atuam na página inicial SAP, pausam em erro ou saída da página inicial e aguardam campos em uso, diálogos ou login. Após três falhas de inspeção, o ciclo para.
+A extensão independente não consegue coordenar reservas de abas de OUTRAS extensões. Antes de rodar uma coleta GO-LAUDOS ou outra automação SAP, use Pausar tudo aqui. Não ative Auto Refresh Plus na mesma aba ao mesmo tempo.
+Abrir SAP, clicar na lupa ou recarregar não comprova renovação da sessão no servidor. Esta extensão não corrige HTTP 0, certificados Fortinet nem falhas do back-end SAP.
+
+VALIDAÇÃO
+19 testes automatizados aprovados. No Chromium, testes com páginas e APIs simuladas validaram o popup, Pausar tudo e um único envio de Entrar no DOM de login.
+Não houve acesso a credenciais nem autenticação real SAP/Microsoft. O carregamento real de extensões neste navegador de desenvolvimento é bloqueado por política administrativa; foi validado o DOM com APIs simuladas e o worker com testes locais.
+Executar testes: node tests/refresh.test.cjs e node tests/session.test.cjs.
+Teste opcional de DOM: node tests/browser.cjs (exige Playwright e /usr/bin/chromium).

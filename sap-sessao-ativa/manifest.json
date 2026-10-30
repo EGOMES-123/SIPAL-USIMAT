@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "SAP Sessão Ativa",
+  "version": "1.0.0",
+  "minimum_chrome_version": "120",
+  "description": "Assistência de login SAP, atualização programada e monitoramento local em uma única aba auxiliar.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://s4.sipal.com.br/*",
+    "https://login.microsoftonline.com/*"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://login.microsoftonline.com/*"
+      ],
+      "js": [
+        "login.js"
+      ],
+      "run_at": "document_idle",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": [
+        "https://s4.sipal.com.br/*"
+      ],
+      "js": [
+        "home-search.js"
+      ],
+      "run_at": "document_idle",
+      "world": "ISOLATED"
+    }
+  ]
+}
