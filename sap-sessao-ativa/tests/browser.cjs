@@ -3,7 +3,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  const root=path.resolve(__dirname,'..');const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  try{
   const context=await browser.newContext();const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.6.0'}),sendMessage:async msg=>{
+  await page.addInitScript(()=>{window.testState={settings:{account:'',enabled:false},run:null,refresh:null};window.chrome={runtime:{getManifest:()=>({version:'1.7.0'}),sendMessage:async msg=>{
    const s=window.testState;
    if(msg.type==='session-info')return s;
    if(msg.type==='settings-save'){s.settings={account:msg.account,enabled:msg.enabled};return {ok:true}}

@@ -29,7 +29,7 @@ async function sessionStartLocked(manual){
   await saveRun({active:false,phase:'attention',message:'A aba auxiliar foi usada para outro site. Ela foi preservada. Feche essa aba e clique em Verificar sessão.'});return {ok:false,error:'A aba auxiliar foi alterada e foi preservada.'};
  }
  if(!tab)tab=await chrome.tabs.create({url:HOME,active:false});
- const run={active:true,mode:'login',sessionMaintenance:true,sessionId:crypto.randomUUID(),tabId:tab.id,startedAt:Date.now(),phase:'waiting',message:'Verificando acesso ao SAP na aba auxiliar.'};
+ const run={active:true,startRefreshOnReady:manual,mode:'login',sessionMaintenance:true,sessionId:crypto.randomUUID(),tabId:tab.id,startedAt:Date.now(),phase:'waiting',message:'Verificando acesso ao SAP na aba auxiliar.'};
  await chrome.storage.session.set({helperTabId:tab.id});await saveRun(run);
  try{
   if(tab.url?.startsWith('https://login.microsoftonline.com/'))await chrome.scripting.executeScript({target:{tabId:tab.id},files:['login.js']});
@@ -62,7 +62,9 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
     if(!sender.url.startsWith('https://s4.sipal.com.br/'))return {ok:false};
     run.active=false;run.phase='done';run.message='SAP acessível; lupa acionada uma vez. Renovação no servidor não comprovada.';
    }else{run.phase=msg.phase==='login'?'login':'waiting';run.message=String(msg.message||'').slice(0,330);}
-   await saveRun(run);return {ok:true};
+   await saveRun(run);
+   if(msg.type==='session-home-done'&&run.startRefreshOnReady)await startRefreshAfterLogin(run);
+   return {ok:true};
   }).then(reply).catch(()=>reply({active:false}));return true;
  }
  if(!['settings-save','session-info','session-start','session-open','pause-all','diagnostics'].includes(msg.type))return;
@@ -104,5 +106,16 @@ async function recoverSelectedLoginLocked(state,tab){
  await saveRun(run);state.recovering=true;state.message=run.message;await refreshSchedule(state);
  try{await chrome.scripting.executeScript({target:{tabId:tab.id},files:['login.js']});}catch{state.message='Abra o login para concluir a autenticação Microsoft.';await refreshSave(state);}
  return state;
+}
+async function startRefreshAfterLogin(run){
+ const {refreshState:prior}=await chrome.storage.session.get('refreshState');
+ if(prior?.enabled)return; // Keep an already selected refresh tab and its running schedule.
+ const tab=await chrome.tabs.get(run.tabId);if(!tab.url?.startsWith('https://s4.sipal.com.br/'))return;
+ const options=refreshOptions({...prior?.options,minSeconds:prior?.options?.minSeconds||15,maxSeconds:prior?.options?.maxSeconds||15,limit:prior?.options?.limit??0,firstDelaySeconds:0,stopOnChange:prior?.options?.stopOnChange??false});
+ const state={enabled:true,tabId:run.tabId,targetUrl:HOME,options,count:0,changes:0,failures:0,hash:null,startedAt:Date.now(),message:'Login concluído. Contagem e atualização iniciadas automaticamente.'};
+ await refreshSave(state);
+ if(!refreshHome(tab.url))await chrome.tabs.update(run.tabId,{url:HOME});
+ try{await chrome.scripting.executeScript({target:{tabId:run.tabId},files:['interaction-guard.js']});}catch{}
+ await refreshSchedule(state);
 }
 importScripts('refresh.js','background-click.js');

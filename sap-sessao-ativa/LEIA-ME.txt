@@ -1,8 +1,12 @@
-ABERTURA AUTOMÁTICA v1.6.0
+INÍCIO APÓS LOGIN v1.7.0
+Na aba Sessão, Entrar e iniciar (antigo Verificar sessão) passa a iniciar a contagem automaticamente depois que a página inicial SAP fica acessível e a lupa é acionada. Usa o intervalo anterior ou, se não houver, 15 segundos sem limite.
+Se uma atualização já estiver ativa, preserva a aba selecionada e seu contador. Verificações periódicas de sessão não reiniciam uma atualização que você parou manualmente. Pausar tudo continua interrompendo o fluxo.
+
+ABERTURA AUTOMÁTICA v1.7.0
 Clique em Iniciar de qualquer aba. Se ela não for a página inicial SAP, a extensão reutiliza sua aba SAP anterior ou abre uma nova na página inicial, sem navegar a página que você estava usando.
 A recuperação de login na Microsoft continua no mesmo fluxo, se o e-mail estiver salvo e Recuperar login estiver marcado. MFA e liberação do preenchimento salvo podem exigir sua ação.
 
-CORREÇÕES v1.6.0
+CORREÇÕES v1.7.0
 O bloqueio indevido por checkbox e campos com valores padrão foi removido. Somente texto realmente digitado pelo usuário nesta página impede recarga; limpe esse campo para retomar. Campos preenchidos pelo próprio SAP e foco automático não bloqueiam o ciclo.
 O diagnóstico informa contagens de processamento, diálogos, senhas e campos editados, sem exportar seus valores.
 Abrir login e Configurar login estão sempre visíveis, fora das abas. Abrir login cria a aba auxiliar se ainda não existir.
@@ -11,7 +15,7 @@ Se a aba de atualização for redirecionada para login.microsoftonline.com, a ex
 Sem e-mail salvo, a recuperação pausa com a instrução Configurar login. Sem senha disponibilizada pelo Chrome ou com MFA, nenhuma autenticação automática é garantida.
 Pause tudo antes de atualizar. Substitua os arquivos, recarregue a extensão E a aba SAP. Configure o login, volte à aba SAP e clique em Iniciar. Cores preservadas.
 
-SAP SESSÃO ATIVA 1.6.0
+SAP SESSÃO ATIVA 1.7.0
 Interface organizada com referência nos controles mostrados do Auto Refresh Plus.
 Implementação própria. Paleta verde escura preservada. Não incorpora código daquele produto.
 
@@ -63,7 +67,7 @@ Pausar tudo encerra atualização, monitoramento e assistência de sessão.
 Baixar diagnóstico exporta estados e até 30 mensagens de transição, sem senha, e-mail ou conteúdo de página.
 
 LIMITES DA VALIDAÇÃO
-42 testes automatizados aprovados. No Chromium, páginas e APIs simuladas validaram as abas, cores, contagem regressiva, cronômetro, opções de monitoramento, Iniciar/Parar, Pausar tudo e envio único de Entrar.
+45 testes automatizados aprovados. No Chromium, páginas e APIs simuladas validaram as abas, cores, contagem regressiva, cronômetro, opções de monitoramento, Iniciar/Parar, Pausar tudo e envio único de Entrar.
 Não houve autenticação real SAP/Microsoft. O carregamento real de extensões no navegador deste ambiente é bloqueado por política administrativa; worker e APIs debugger foram testados com simulações.
 Não corrige HTTP 0 nem certificados Fortinet. Abrir SAP, clicar na lupa e recarregar não comprovam renovação de sessão no servidor.
 Abas inativas, economia de energia e suspensão podem atrasar o contador e a execução. Alarmes do Chrome são uma recuperação adicional; a temporização abaixo de 30 segundos depende do temporizador da página.
