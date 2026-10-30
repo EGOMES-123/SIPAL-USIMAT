@@ -1,58 +1,57 @@
-TEMPORIZADOR v1.3.0
-Contagem regressiva no popup e no ícone da extensão: 00:15 até 00:00. Fixe a extensão na barra para ver o indicador.
-II indica atualização pausada; LOGIN indica assistência de login; ESP indica espera por condição segura. O texto de ajuda do ícone detalha o estado. O popup mostra também Pausado ou Login em andamento.
-Mantém 15 segundos, sem limite, e o clique no fundo Microsoft. O contador usa a mesma data de vencimento da recarga. Mensagens por segundo atualizam o ícone; abas inativas, suspensão e economia de energia podem atrasar o contador e a recarga.
-O estado dos controles e o fluxo foram testados em páginas simuladas; integração real com SAP/Chrome do usuário permanece por confirmar.
+SAP SESSÃO ATIVA 1.4.0
+Interface organizada com referência nos controles mostrados do Auto Refresh Plus.
+Implementação própria. Paleta verde escura preservada. Não incorpora código daquele produto.
 
-ATUALIZAÇÃO v1.2.0 — 15 SEGUNDOS, SEM LIMITE E CLIQUE NO FUNDO
-Pause tudo antes de substituir os arquivos. Recarregue a extensão e depois a aba Microsoft/SAP. Se o Chrome solicitar a nova permissão debugger, aprove para habilitar o clique nativo no fundo do cartão.
-No popup, configure Mínimo=15, Máximo=15 e Limite=0; deixe Pausar ao detectar mudança desmarcado se quiser atualização contínua. Clique em Iniciar nesta aba, na página inicial SAP.
-O temporizador da página agenda os 15 segundos; alarmes do Chrome são uma recuperação de apoio. Abas inativas, economia de energia e suspensão podem atrasar recargas. Não é um temporizador de tempo real.
-Sem limite de quantidade não significa recarregar o login: consultas, campos em uso, erros e a etapa Microsoft continuam protegidos. Pausar tudo continua disponível.
+ATUALIZAÇÃO
+Pause tudo, substitua os arquivos na MESMA pasta e recarregue a extensão em chrome://extensions. Recarregue também a aba SAP/Microsoft. Fixe o ícone para ver a contagem regressiva.
+Nova instalação: extraia o ZIP, abra chrome://extensions, ative Modo do desenvolvedor e clique em Carregar sem compactação, selecionando a pasta sap-sessao-ativa que contém manifest.json.
+Desative outras extensões de sessão/atualização na mesma aba. Esta extensão não coordena coletas de outras extensões, como GO-LAUDOS; use Pausar tudo antes dessas coletas.
 
-SAP SESSÃO ATIVA — versão independente 1.3.0
+INTERVALO
+Fixo: informe segundos ou escolha os atalhos 5s, 10s, 15s, 5m, 10m e 15m.
+Aleatório: configure mínimo e máximo em segundos.
+Personalizado: informe horas, minutos e segundos.
+Padrão: 15 segundos, sem limite. Intervalos válidos: 1 a 86400 segundos.
+Definir número de atualizações desativado = sem limite. Ativado = encerra após a quantidade escolhida, entre 1 e 1000.
+Atualização forçada ignora o cache.
+Clique no botão superior Iniciar. Durante um ciclo, o mesmo botão vira Parar.
 
-INSTALAÇÃO
-1. Desative a extensão antiga SAP Sessão Automática 0.10.9.
-2. Se usa GO-LAUDOS integrado (v33/v34), desative nele a sessão automática e a atualização. Esta versão funciona por conta própria.
-3. Extraia o ZIP em uma pasta permanente. Abra chrome://extensions, ative Modo do desenvolvedor, clique em Carregar sem compactação e selecione a pasta sap-sessao-ativa (a pasta que contém manifest.json).
-4. Fixe SAP Sessão Ativa na barra do Chrome. Informe seu e-mail Microsoft e clique em Salvar.
-5. Clique em Verificar sessão. Uma única aba auxiliar abre em segundo plano. Use Abrir aba auxiliar para acompanhar login, confirmar preenchimento do Chrome ou fazer MFA.
-6. Se quiser verificações periódicas, marque Verificar a cada 4 minutos e salve.
+CRONÔMETRO
+Duração: informe horas, minutos e segundos até a primeira atualização.
+Data e hora: escolha um horário futuro, no horário local do computador.
+Início válido: entre 1 segundo e 7 dias no futuro. Selecione esta aba e clique em Iniciar.
+Atualizar uma vez e parar vem marcado. Desmarque para repetir usando o intervalo configurado, depois da primeira atualização.
+Se houver login, campo em uso ou SAP ocupado no vencimento, a verificação é adiada pelo intervalo configurado. O cronômetro não força interrupções.
 
-ATUALIZAÇÃO DE PÁGINA
-Abra a página inicial SAP (#Shell-home) e, com essa aba selecionada, abra o popup.
-Configure o intervalo mínimo e máximo: iguais = fixo; diferentes = aleatório. Mínimo de 15 segundos. Padrão de 15 segundos e sem limite (valor 0).
-Ignorar cache vale apenas para as recargas programadas.
-Monitorar mudanças compara o texto visível da página principal entre verificações. Relógios e textos dinâmicos também podem mudar. Pausar ao detectar mudança interrompe novas recargas para você conferir.
-Se escolher um limite maior que zero, ele também encerra o monitoramento. Com 0, não há limite de recargas.
+ABAS
+Mostra a aba gerenciada, quantidade de recargas e limite. Esta versão controla UMA aba por vez, apenas na página inicial SAP (/sap/bc/ui2/flp#Shell-home).
+Para trocar, pare o ciclo e inicie na aba desejada. Não recarrega consultas nem a página Microsoft.
 
-CONTROLES
-Pausar atualização: encerra atualização e monitoramento, sem desativar a assistência de sessão.
-Pausar tudo: encerra atualização, monitoramento e verificação de sessão.
-Baixar diagnóstico: exporta versão, estado e até 30 transições de sessão, sem e-mail, senha ou conteúdo de páginas.
-Após reiniciar o Chrome, as automações ficam desligadas. O e-mail permanece salvo; habilite novamente quando desejar. Suspensão do computador pode atrasar alarmes.
+MONITORAR
+Ative Monitorar conteúdo para comparar mudanças no texto visível da página principal.
+Opcionalmente informe uma expressão de até 200 caracteres; nesse caso monitora o aparecimento desse texto, sem diferenciar maiúsculas de minúsculas.
+Ative Parar ao encontrar o texto ou detectar mudança para interromper as recargas quando houver detecção.
+As opções são aplicadas ao iniciar um novo ciclo. Textos dinâmicos, como relógios, podem causar detecções no modo de comparação geral.
+Não monitora conteúdo interno de iframes. Guarda somente uma assinatura do conteúdo e contadores; o texto da página não é enviado à nuvem. A expressão de busca escolhida fica localmente no estado do ciclo.
 
-PROTEÇÕES E LIMITES
-Nenhuma consulta SAP é executada. Não há captura de pesagens, Supabase, Netlify ou vínculo com GO-LAUDOS.
-Não fecha janelas automaticamente. Na etapa de senha, traz a aba Microsoft à frente para clicar no fundo vazio à direita do cartão, como solicitado. Abrir aba auxiliar também traz a aba à frente.
-Não navega uma aba auxiliar que tenha sido usada para outro site. Feche essa aba e inicie uma nova verificação.
-A assistência para após 3 minutos sem conclusão. Não repete indefinidamente. Use Verificar sessão após conferir a aba Microsoft.
-A senha não é armazenada ou enviada pela extensão; o Chrome precisa fornecer o preenchimento salvo. MFA e algumas confirmações exigem participação do usuário.
-Recargas só atuam na página inicial SAP, pausam em erro ou saída da página inicial e aguardam campos em uso, diálogos ou login. Após três falhas de inspeção, o ciclo para.
-A extensão independente não consegue coordenar reservas de abas de OUTRAS extensões. Antes de rodar uma coleta GO-LAUDOS ou outra automação SAP, use Pausar tudo aqui. Não ative Auto Refresh Plus na mesma aba ao mesmo tempo.
-Abrir SAP, clicar na lupa ou recarregar não comprova renovação da sessão no servidor. Esta extensão não corrige HTTP 0, certificados Fortinet nem falhas do back-end SAP.
+SESSÃO
+Configure seu e-mail Microsoft, salve e clique em Verificar sessão.
+Uma única aba auxiliar é criada e reutilizada. Abrir aba auxiliar permite acompanhar ou concluir MFA.
+Na tela de senha, traz a aba à frente e clica uma vez no fundo vazio à direita do cartão Microsoft, na região indicada pelo usuário. Usa o tamanho da janela e a posição do cartão, não coordenadas fixas.
+Exige permissão debugger; Chrome pode exibir aviso de depuração. A rotina de depuração envia eventos de mouse e encerra a conexão. Não usa a depuração para ler senha, cookies ou tráfego.
+Após o clique, aguarda a senha ficar disponível e dois segundos antes de Entrar. Isso não garante liberação do preenchimento pelo Chrome. MFA e confirmações podem exigir sua ação.
+A verificação para após três minutos sem conclusão; use Verificar sessão para retomar. Não abre janelas em ciclo nem fecha abas do usuário.
+Verificar a cada 4 minutos é opcional. Ao reiniciar o Chrome, todas as automações ficam desativadas; o e-mail salvo permanece.
 
-VALIDAÇÃO
-31 testes automatizados aprovados. No Chromium, testes com páginas e APIs simuladas validaram o popup, Pausar tudo e um único envio de Entrar no DOM de login.
-Não houve acesso a credenciais nem autenticação real SAP/Microsoft. O carregamento real de extensões neste navegador de desenvolvimento é bloqueado por política administrativa; foi validado o DOM com APIs simuladas e o worker com testes locais.
-Executar testes: node tests/refresh.test.cjs e node tests/session.test.cjs.
-Teste opcional de DOM: node tests/browser.cjs (exige Playwright e /usr/bin/chromium).
+CONTADOR E PAUSA
+Contagem regressiva no popup e no ícone, baseada no mesmo vencimento da recarga.
+II = pausado. LOGIN = assistência de login em andamento. ESP = aguardando condição segura.
+Pausar tudo encerra atualização, monitoramento e assistência de sessão.
+Baixar diagnóstico exporta estados e até 30 mensagens de transição, sem senha, e-mail ou conteúdo de página.
 
-PREENCHIMENTO SALVO — v1.1.0
-A tela de senha recebe um clique nativo no fundo à direita do cartão Microsoft. O ponto é calculado pela posição do cartão e pelo tamanho da janela, incluindo a área acima e à direita mostrada pelo usuário. Não utiliza coordenadas fixas da imagem.
-O Chrome pode pedir aprovação da nova permissão debugger ao atualizar a extensão e mostrar um aviso de depuração. A conexão de depuração é encerrada após o clique. A rotina só envia eventos de mouse; não consulta senha, cookies ou tráfego pela interface de depuração.
-O clique é tentado uma vez por documento e verificação. Se a página mudar ou não houver espaço livre, a rotina não clica e informa que é preciso conferir a aba. Políticas da empresa podem bloquear a depuração.
-Depois do clique, aguarda o Chrome disponibilizar a senha salva e pelo menos dois segundos antes de Entrar. Um clique não garante o desbloqueio do preenchimento, e MFA continua exigindo sua ação.
-Atualize na mesma pasta, recarregue a extensão e depois a aba Microsoft. Clique em Verificar sessão para iniciar uma nova tentativa.
-Os eventos de mouse foram testados com a API debugger simulada; o fluxo de preparação e Entrar foi validado em DOM Microsoft simulado. Não foi comprovado o desbloqueio real do preenchimento no perfil do usuário.
+LIMITES DA VALIDAÇÃO
+34 testes automatizados aprovados. No Chromium, páginas e APIs simuladas validaram as abas, cores, contagem regressiva, cronômetro, opções de monitoramento, Iniciar/Parar, Pausar tudo e envio único de Entrar.
+Não houve autenticação real SAP/Microsoft. O carregamento real de extensões no navegador deste ambiente é bloqueado por política administrativa; worker e APIs debugger foram testados com simulações.
+Não corrige HTTP 0 nem certificados Fortinet. Abrir SAP, clicar na lupa e recarregar não comprovam renovação de sessão no servidor.
+Abas inativas, economia de energia e suspensão podem atrasar o contador e a execução. Alarmes do Chrome são uma recuperação adicional; a temporização abaixo de 30 segundos depende do temporizador da página.
+Testes locais: execute cada arquivo tests/*.test.cjs com Node. Teste opcional do DOM: node tests/browser.cjs (Playwright e /usr/bin/chromium).
