@@ -9,6 +9,16 @@ async function updateRefreshBadge(){
 }
 // Original implementation inspired by refresh/monitor workflows; no third-party extension code.
 const REFRESH_ALARM='sap-session-refresh';
+async function selectRefreshTab(tabId,state){
+ let tab;try{tab=await chrome.tabs.get(tabId)}catch{}
+ if(refreshHome(tab?.url))return tab;
+ const {helperTabId}=await chrome.storage.session.get('helperTabId');
+ for(const id of [...new Set([state?.tabId,helperTabId])].filter(Number.isInteger)){
+  try{const existing=await chrome.tabs.get(id);if(refreshHome(existing.url)){await chrome.tabs.update(id,{active:true});return existing}}catch{}
+ }
+ return chrome.tabs.create({url:'https://s4.sipal.com.br/sap/bc/ui2/flp#Shell-home',active:true});
+}
+
 function refreshOptions(raw){
  const min=Number(raw.minSeconds),max=Number(raw.maxSeconds),limit=Number(raw.limit);
  if(!Number.isInteger(min)||min<1||min>86400||!Number.isInteger(max)||max<min||max>86400)throw Error('Use intervalos inteiros de 1 a 86400 segundos; máximo maior ou igual ao mínimo.');
@@ -94,10 +104,9 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
   return serial(async()=>{
    const {refreshState:state}=await chrome.storage.session.get('refreshState');
    if(msg.type==='refresh-stop')return refreshPause(state||{},'Atualização pausada por você.');
-   const options=refreshOptions(msg.options||{});const tab=await chrome.tabs.get(msg.tabId);
-   if(!refreshHome(tab.url))throw Error('Abra a página inicial SAP (#Shell-home). A atualização não atua em consultas nem no login.');
+   const options=refreshOptions(msg.options||{});const tab=await selectRefreshTab(msg.tabId,state);
    try{await chrome.scripting.executeScript({target:{tabId:tab.id,frameIds:[0]},files:['interaction-guard.js']});}catch{}
-   const next={enabled:true,tabId:tab.id,targetUrl:tab.url,options,count:0,changes:0,failures:0,hash:null,startedAt:Date.now(),message:'Programado. Primeira atualização após o intervalo escolhido.'};
+   const next={enabled:true,tabId:tab.id,targetUrl:refreshHome(tab.url)?tab.url:'https://s4.sipal.com.br/sap/bc/ui2/flp#Shell-home',options,count:0,changes:0,failures:0,hash:null,startedAt:Date.now(),message:'Programado. Primeira atualização após o intervalo escolhido.'};
    return refreshSchedule(next,options.firstDelaySeconds);
   });
  })().then(reply).catch(error=>reply({error:error.message}));return true;
