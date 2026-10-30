@@ -1,0 +1,21 @@
+GO-LAUDOS v0.33.0 — coletor e sessão automática integrados
+
+COMO ATUALIZAR
+1. Pare o robô no popup do GO-LAUDOS.
+2. Desative a extensão separada SAP Sessão Automática (0.10.9).
+3. Substitua os arquivos na MESMA pasta da extensão GO-LAUDOS existente.
+4. Em chrome://extensions, clique em Recarregar no GO-LAUDOS. Não remova a extensão: o vínculo e as capturas dependem do armazenamento dela.
+5. Recarregue as abas do SAP, da Microsoft e do painel.
+6. No popup do GO-LAUDOS, informe seu e-mail Microsoft em Sessão automática integrada. Marque a verificação periódica e clique em Salvar sessão.
+7. Clique em Verificar sessão agora. Se a Microsoft solicitar MFA ou confirmação do preenchimento salvo, conclua na aba auxiliar. Depois clique em Sincronizar no painel.
+
+A sessão automática verifica a página inicial do SAP e aciona a lupa uma vez, em uma única aba auxiliar. Isso não comprova renovação de sessão no servidor. O Chrome precisa permanecer aberto. A coleta tem prioridade. Após 3 minutos sem conclusão, a manutenção pausa e requer Verificar sessão para retomar; não abre janelas em ciclo.
+Não há senha embutida, captura de senha nem cliques de depuração. O Chrome precisa disponibilizar o preenchimento salvo; MFA requer sua participação.
+
+EXECUTAR
+Reconhece o botão pelo texto Executar/Execute, F8 e pelo identificador específico SAP wnd[0]/tbar[1]/btn[8]. Ignora controles desabilitados e bloqueia múltiplos candidatos. Os filtros são reconhecidos pelo SID, independentemente do índice de metadados, somente em campos visíveis. Nenhuma repetição automática após um clique já enviado.
+O reconhecimento adicional foi validado em páginas de teste; sem acesso ao DOM do seu SAP não é possível garantir que seu botão use esses atributos. Se falhar, envie o resultado de Diagnóstico do Executar na v0.33.0.
+
+VALIDAÇÃO
+17 testes automatizados aprovados. No Chromium, validação do DOM de teste confirmou clique do botão por SID, preenchimento dos filtros e solicitação de Executar, além do popup com APIs Chrome simuladas.
+A instalação real da extensão neste ambiente foi bloqueada pela política administrativa do Chromium. SAP autenticado, renovação no servidor, coleta real, vínculo Supabase e envio real não foram validados aqui.

@@ -1,0 +1,27 @@
+GO - LAUDOS · COLETOR SAP V27
+
+ATUALIZAÇÃO SEM PERDER O VÍNCULO
+1. Na extensão atual, use Parar robô / liberar aba.
+2. Extraia este ZIP e copie o CONTEÚDO da pasta coletor-sap para a MESMA pasta carregada no Chrome. Substitua os arquivos.
+3. Em chrome://extensions clique no ícone Recarregar. Confira a versão 0.27.0.
+4. NÃO remova a extensão nem carregue outra pasta. Mudar a pasta pode criar outro vínculo.
+5. Mantenha Receber pedidos do painel neste computador ativado.
+6. Feche a aba SAP do robô anterior. Atualize https://go-laudos.netlify.app/ e use Sincronizar.
+
+EXECUTAR COM CONFIRMAÇÃO
+Os filtros são alterados apenas quando necessário. O robô aguarda a estabilização e verifica indicadores de SAP ocupado antes do clique. O clique NÃO é tratado como prova de consulta. O processamento é confirmado por Buscando contratos ou por pesagens na tabela. Sem confirmação, o diagnóstico mostra a falha e não dispara cliques sucessivos.
+
+DIAGNÓSTICO
+Abra a extensão GO - LAUDOS · Coletor SAP e clique Diagnóstico do Executar. Mostra versão, etapa, quantidade de botões identificados e sinais de carregamento. Não inclui senha, tokens, chave privada nem dados das pesagens. Envie esse texto ao responsável se o SAP não responder.
+
+AUTOMÁTICO
+Agenda na nuvem: a cada 30 minutos de 07:30 até 10:30 e de 13:00 até 17:30, todos os dias, Mato Grosso. Horários podem ser desmarcados no painel pelo computador vinculado. Chrome aberto, PC ligado e sem suspensão. Sem consulta automática nova no almoço ou após 17:30. Consultas em andamento podem continuar. Não é necessário manter o painel aberto.
+
+CONSULTA FIXA
+Centro 1301, início 01.01.2026, fim ontem, layout EGOMES. O robô reserva uma aba para proteger suas outras conferências. Login depende da sessão e do preenchimento automático já configurado no seu Chrome. Não dispensa confirmações exigidas pelo SAP/Microsoft.
+
+VERIFICAÇÃO
+Os testes de código verificam a não duplicação de cliques, pausa com SAP ocupado, exigência de confirmação real e proteção das outras abas. O teste completo no SAP real precisa ser validado no computador do usuário.
+
+V27 — CONSULTA MENSAL
+Consultas automáticas e Abrir SAP e iniciar robô consultam janeiro de 2026 em diante, um mês por vez. O mês atual termina em ontem. Cada mês tem captura, conferência de total e envio antes do próximo. O robô abre uma nova aba reservada para o mês seguinte e fecha apenas sua própria aba anterior, após confirmação. Nunca fecha abas SAP abertas manualmente. Mês com grade SAP de total zero é tratado como vazio; se o SAP não permitir confirmar a cobertura ou o envio, a sequência pausa. Um novo pedido retoma o mês interrompido quando o período final ainda é o mesmo. Ler esta tabela automaticamente permanece limitado à tabela já aberta. O painel mostra mês atual e total acumulado da sequência. O intervalo de 30 minutos não cria outra execução enquanto a sequência está ativa.

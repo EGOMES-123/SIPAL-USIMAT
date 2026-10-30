@@ -1,0 +1,8 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');const fs=require('node:fs');const path=require('node:path');
+const code=fs.readFileSync(path.join(__dirname,'../coletor-sap/execute.js'),'utf8');
+function button(label,meta={},disabled=false){return {disabled,textContent:label,clicks:0,getBoundingClientRect:()=>({width:30,height:20}),getAttribute:k=>k==='lsdata'?JSON.stringify(meta):null,querySelector:()=>null,contains:()=>false,focus(){},click(){this.clicks++}}}
+function execute(buttons,busy=false){const context={location:{hostname:'s4.sipal.com.br'},getComputedStyle:()=>({visibility:'visible'}),document:{querySelectorAll:selector=>selector.includes('aria-busy')?(busy?[button('busy')]:[]):buttons}};vm.runInNewContext(code,context);return vm.runInNewContext('sapExecuteButton(true)',context)}
+test('SAP execute is recognized by exact toolbar SID without a label',()=>{const b=button('',{17:{SID:'wnd[0]/tbar[1]/btn[8]'}});assert.equal(execute([b]).clicked,true);assert.equal(b.clicks,1)});
+test('localized execute labels work',()=>{for(const label of ['Executar (F8)','Execute [F8]','Executar']){const b=button(label);assert.equal(execute([b]).clicked,true)}});
+test('ambiguous, disabled and busy buttons are never clicked',()=>{const a=button('Executar'),b=button('Executar');assert.equal(execute([a,b]).clicked,false);assert.equal(execute([button('Executar',{},true)]).clicked,false);assert.equal(execute([a],true).clicked,false);assert.equal(a.clicks,0)});
+test('a different SAP toolbar button does not count as Execute',()=>{assert.equal(execute([button('',{17:{SID:'wnd[0]/tbar[0]/btn[8]'}})]).clicked,false)});
